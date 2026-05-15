@@ -1,1 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Final Invitation - Watermark Participant Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="confirmation-page">
+  <div class="confirmation-wrapper">
+    <div class="invitation-card">
 
+      <div id="invitationContent"></div>
+
+      <div class="qr-placeholder">
+        QR EVENT PASS
+      </div>
+
+      <div class="event-pass-footer">
+        Watermark Participant Hub
+      </div>
+
+      <br>
+
+      <a href="index.html" class="btn-link">
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const participantId = params.get("id");
+
+    let events =
+      JSON.parse(localStorage.getItem("wph_events")) || [];
+
+    let participants =
+      JSON.parse(localStorage.getItem("wph_participants")) || [];
+
+    const invitationContent =
+      document.getElementById("invitationContent");
+
+    function getEventName(eventId) {
+      const event = events.find(
+        item => item.id === eventId
+      );
+
+      return event ? event.name : "No Event";
+    }
+
+    function getEventDetail(eventId) {
+      return events.find(
+        item => item.id === eventId
+      );
+    }
+
+    function renderInvitation() {
+      const participant =
+        participants.find(
+          item => item.id === participantId
+        );
+
+      if (!participant) {
+        invitationContent.innerHTML = `
+          <h2>Participant Not Found</h2>
+        `;
+        return;
+      }
+
+      const event =
+        getEventDetail(participant.eventId);
+
+      invitationContent.innerHTML = `
+        <h1>FINAL INVITATION</h1>
+
+        <div class="invitation-badge">
+          ${participant.status}
+        </div>
+
+        <h2>${participant.name}</h2>
+
+        <p>${participant.company}</p>
+
+        <br>
+
+        <p>
+          ${getEventName(participant.eventId)}
+        </p>
+
+        <p>
+          ${event?.date || "-"}
+        </p>
+
+        <p>
+          ${event?.venue || "-"}
+        </p>
+
+        <br>
+
+        <h3>
+          ${participant.tableNumber || "General Seating"}
+        </h3>
+
+        <p>
+          ${participant.mealNotes || ""}
+        </p>
+      `;
+    }
+
+    renderInvitation();
+  </script>
+</body>
+</html>
