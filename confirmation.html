@@ -1,1 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Participant Confirmation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="confirmation-page">
+  <div class="confirmation-wrapper">
+    <div class="confirmation-card">
+      <h1>Participant Confirmation</h1>
+      <p class="subtitle">Mohon lengkapi konfirmasi kehadiran dan kebutuhan dasar Anda.</p>
 
+      <div class="error-box" id="errorBox"></div>
+      <div class="success-box" id="successBox">
+        Terima kasih. Data konfirmasi Anda sudah berhasil dikirim.
+      </div>
+
+      <div class="guest-box" id="guestBox"></div>
+
+      <form id="confirmationForm">
+        <label>Attendance Confirmation</label>
+        <select id="attendance" required>
+          <option value="Attend">Attend</option>
+          <option value="Not Attend">Not Attend</option>
+        </select>
+
+        <label>Need Hotel?</label>
+        <select id="hotelNeeded" required>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+
+        <label>Need Transport?</label>
+        <select id="transportNeeded" required>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+
+        <label>Food Restriction</label>
+        <textarea id="foodRestriction" placeholder="Contoh: No seafood, vegetarian, halal only, allergy kacang, dll."></textarea>
+
+        <label>Additional Notes</label>
+        <textarea id="notes" placeholder="Catatan tambahan untuk panitia."></textarea>
+
+        <button type="submit">Submit Confirmation</button>
+      </form>
+
+      <br />
+      <a href="index.html" class="btn-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    const defaultEvents = [
+      {
+        id: "event-001",
+        name: "Daikin National Gathering",
+        date: "2026-06-12",
+        venue: "Jakarta Convention Center",
+        status: "Active"
+      },
+      {
+        id: "event-002",
+        name: "Corporate Meeting 2026",
+        date: "2026-07-03",
+        venue: "Hotel Indonesia Kempinski",
+        status: "Draft"
+      }
+    ];
+
+    const defaultParticipants = [
+      {
+        id: "participant-001",
+        eventId: "event-001",
+        name: "Bambang Ramdany",
+        company: "PT Sinematik Anak Bangsa",
+        whatsapp: "081234567890",
+        email: "bambang@example.com",
+        status: "Confirmed"
+      },
+      {
+        id: "participant-002",
+        eventId: "event-001",
+        name: "Andi Pratama",
+        company: "PT Contoh Sejahtera",
+        whatsapp: "081298765432",
+        email: "andi@example.com",
+        status: "Pending"
+      }
+    ];
+
+    const params = new URLSearchParams(window.location.search);
+    const participantId = params.get("id");
+
+    let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
+    let participants = JSON.parse(localStorage.getItem("wph_participants")) || defaultParticipants;
+    let confirmations = JSON.parse(localStorage.getItem("wph_confirmations")) || [];
+
+    const guestBox = document.getElementById("guestBox");
+    const errorBox = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+    const confirmationForm = document.getElementById("confirmationForm");
+
+    function getEventName(eventId) {
+      const event = events.find(item => item.id === eventId);
+      return event ? event.name : "No Event";
+    }
+
+    function findParticipant() {
+      return participants.find(item => item.id === participantId);
+    }
+
+    function findExistingConfirmation() {
+      return confirmations.find(item => item.participantId === participantId);
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+      confirmationForm.style.display = "none";
+      guestBox.style.display = "none";
+    }
+
+    function renderParticipant() {
+      const participant = findParticipant();
+
+      if (!participantId) {
+        showError("Link peserta tidak valid. Mohon hubungi panitia.");
+        return;
+      }
+
+      if (!participant) {
+        showError("Data peserta tidak ditemukan. Mohon kembali ke dashboard dan gunakan link peserta yang benar.");
+        return;
+      }
+
+      guestBox.innerHTML = `
+        <p><strong>Name:</strong> ${participant.name}</p>
+        <p><strong>Company:</strong> ${participant.company}</p>
+        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
+        <p><strong>WhatsApp:</strong> ${participant.whatsapp}</p>
+        <p><strong>Email:</strong> ${participant.email}</p>
+      `;
+
+      const existing = findExistingConfirmation();
+
+      if (existing) {
+        document.getElementById("attendance").value = existing.attendance;
+        document.getElementById("hotelNeeded").value = existing.hotelNeeded;
+        document.getElementById("transportNeeded").value = existing.transportNeeded;
+        document.getElementById("foodRestriction").value = existing.foodRestriction;
+        document.getElementById("notes").value = existing.notes;
+      }
+    }
+
+    confirmationForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const participant = findParticipant();
+
+      if (!participant) {
+        showError("Data peserta tidak ditemukan. Mohon hubungi panitia.");
+        return;
+      }
+
+      const confirmationData = {
+        id: `confirmation-${Date.now()}`,
+        participantId: participant.id,
+        attendance: document.getElementById("attendance").value,
+        hotelNeeded: document.getElementById("hotelNeeded").value,
+        transportNeeded: document.getElementById("transportNeeded").value,
+        foodRestriction: document.getElementById("foodRestriction").value,
+        notes: document.getElementById("notes").value,
+        submittedAt: new Date().toISOString()
+      };
+
+      const existingIndex = confirmations.findIndex(item => item.participantId === participant.id);
+
+      if (existingIndex >= 0) {
+        confirmations[existingIndex] = confirmationData;
+      } else {
+        confirmations.push(confirmationData);
+      }
+
+      participants = participants.map(item => {
+        if (item.id === participant.id) {
+          return {
+            ...item,
+            status: confirmationData.attendance === "Attend" ? "Submitted" : "Not Attend"
+          };
+        }
+        return item;
+      });
+
+      localStorage.setItem("wph_confirmations", JSON.stringify(confirmations));
+      localStorage.setItem("wph_participants", JSON.stringify(participants));
+
+      successBox.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    renderParticipant();
+  </script>
+</body>
+</html>
