@@ -9,7 +9,7 @@
 <body class="confirmation-page">
   <div class="confirmation-wrapper">
     <div class="invitation-card">
-      <div id="invitationContent"></div>
+      <div id="invitationContent">Loading invitation...</div>
 
       <div class="qr-placeholder" id="qrBox">
         Loading QR...
@@ -29,38 +29,71 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const participantId = params.get("id");
 
-    let events = JSON.parse(localStorage.getItem("wph_events")) || [];
-    let participants = JSON.parse(localStorage.getItem("wph_participants")) || [];
-
     const invitationContent = document.getElementById("invitationContent");
     const qrBox = document.getElementById("qrBox");
+
+    let participant = null;
+    let eventData = null;
 
     function getBaseUrl() {
       return window.location.origin + window.location.pathname.replace("invitation.html", "");
     }
 
-    function getCheckinUrl(participantId) {
-      return `${getBaseUrl()}checkin.html?id=${participantId}`;
+    function getCheckinUrl(id) {
+      return `${getBaseUrl()}checkin.html?id=${id}`;
     }
 
-    function getEventDetail(eventId) {
-      return events.find(item => item.id === eventId);
+    function showError(message) {
+      invitationContent.innerHTML = `<h2>${message}</h2>`;
+      qrBox.style.display = "none";
     }
 
-    function renderInvitation() {
-      const participant = participants.find(item => item.id === participantId);
-
-      if (!participant) {
-        invitationContent.innerHTML = `<h2>Participant Not Found</h2>`;
-        qrBox.style.display = "none";
+    async function fetchParticipant() {
+      if (!participantId) {
+        showError("Invalid invitation link");
         return;
       }
 
-      const event = getEventDetail(participant.eventId);
+      const { data, error } = await supabaseClient
+        .from("participants")
+        .select("*")
+        .eq("id", participantId)
+        .single();
+
+      if (error || !data) {
+        console.error(error);
+        showError("Participant Not Found");
+        return;
+      }
+
+      participant = data;
+
+      await fetchEvent();
+      renderInvitation();
+    }
+
+    async function fetchEvent() {
+      if (!participant.event_id) return;
+
+      const { data, error } = await supabaseClient
+        .from("events")
+        .select("*")
+        .eq("id", participant.event_id)
+        .single();
+
+      if (!error && data) {
+        eventData = data;
+      }
+    }
+
+    function renderInvitation() {
       const checkinUrl = getCheckinUrl(participant.id);
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(checkinUrl)}`;
 
@@ -68,34 +101,34 @@
         <h1>FINAL INVITATION</h1>
 
         <div class="invitation-badge">
-          ${participant.status}
+          ${participant.status || "Pending"}
         </div>
 
-        <h2>${participant.name}</h2>
-        <p>${participant.company}</p>
+        <h2>${participant.full_name}</h2>
+        <p>${participant.company || "-"}</p>
 
         <br />
 
-        <p>${event?.name || "No Event"}</p>
-        <p>${event?.date || "-"}</p>
-        <p>${event?.venue || "-"}</p>
+        <p>${eventData?.event_name || "No Event"}</p>
+        <p>${eventData?.event_date || "-"}</p>
+        <p>${eventData?.venue || "-"}</p>
 
         <br />
 
-        <h3>${participant.tableNumber || "General Seating"}</h3>
-        <p>${participant.mealNotes || ""}</p>
+        <h3>${participant.table_number || "General Seating"}</h3>
+        <p>${participant.meal_notes || ""}</p>
       `;
 
       qrBox.innerHTML = `
-        <img 
-          src="${qrUrl}" 
-          alt="QR Code Event Pass" 
+        <img
+          src="${qrUrl}"
+          alt="QR Code Event Pass"
           style="width: 180px; height: 180px; border-radius: 12px;"
         />
       `;
     }
 
-    renderInvitation();
+    fetchParticipant();
   </script>
 </body>
 </html>
