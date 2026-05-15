@@ -17,6 +17,7 @@ const isViewer = loggedUser.role === "Viewer";
 
 let events = [];
 let participants = [];
+let checkins = [];
 
 const eventModal = document.getElementById("eventModal");
 const participantModal = document.getElementById("participantModal");
@@ -48,6 +49,10 @@ function getEventName(eventId) {
   return event ? event.event_name : "-";
 }
 
+function getCheckinByParticipantId(participantId) {
+  return checkins.find(item => item.participant_id === participantId);
+}
+
 async function fetchEvents() {
   const { data, error } = await supabaseClient
     .from("events")
@@ -61,9 +66,6 @@ async function fetchEvents() {
   }
 
   events = data || [];
-  renderEventOptions();
-  renderEvents();
-  renderDashboard();
 }
 
 async function fetchParticipants() {
@@ -79,9 +81,20 @@ async function fetchParticipants() {
   }
 
   participants = data || [];
-  renderParticipants();
-  renderRecentParticipants();
-  renderDashboard();
+}
+
+async function fetchCheckins() {
+  const { data, error } = await supabaseClient
+    .from("checkins")
+    .select("*");
+
+  if (error) {
+    console.error(error);
+    alert("Failed to load check-ins.");
+    return;
+  }
+
+  checkins = data || [];
 }
 
 async function createEvent(payload) {
@@ -96,7 +109,7 @@ async function createEvent(payload) {
   }
 
   showToast("Event saved!");
-  await fetchEvents();
+  await initApp();
 }
 
 async function createParticipant(payload) {
@@ -111,7 +124,7 @@ async function createParticipant(payload) {
   }
 
   showToast("Participant saved!");
-  await fetchParticipants();
+  await initApp();
 }
 
 async function deleteEvent(id) {
@@ -130,7 +143,7 @@ async function deleteEvent(id) {
   }
 
   showToast("Event deleted!");
-  await fetchEvents();
+  await initApp();
 }
 
 async function deleteParticipant(id) {
@@ -149,25 +162,28 @@ async function deleteParticipant(id) {
   }
 
   showToast("Participant deleted!");
-  await fetchParticipants();
+  await initApp();
 }
 
 function renderDashboard() {
   const totalEvents = events.length;
   const totalParticipants = participants.length;
 
-  const verified = participants.filter(p =>
-    ["Verified", "Finalized"].includes(p.status)
+  const arrived = participants.filter(p =>
+    getCheckinByParticipantId(p.id)
   ).length;
 
-  const pending = participants.filter(p =>
-    !p.status || p.status === "Pending"
-  ).length;
+  const notArrived = totalParticipants - arrived;
+
+  const arrivalRate =
+    totalParticipants > 0
+      ? Math.round((arrived / totalParticipants) * 100)
+      : 0;
 
   document.getElementById("totalEvents").textContent = totalEvents;
   document.getElementById("totalParticipants").textContent = totalParticipants;
-  document.getElementById("verifiedParticipants").textContent = verified;
-  document.getElementById("pendingParticipants").textContent = pending;
+  document.getElementById("verifiedParticipants").textContent = arrived;
+  document.getElementById("pendingParticipants").textContent = `${notArrived} / ${arrivalRate}%`;
 }
 
 function renderEvents() {
@@ -239,6 +255,9 @@ function renderParticipants() {
   }
 
   participants.forEach(participant => {
+    const checkin = getCheckinByParticipantId(participant.id);
+    const arrivalStatus = checkin ? "Arrived" : "Not Arrived";
+
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -254,6 +273,10 @@ function renderParticipants() {
       <td>
         <span class="badge ${getStatusClass(participant.status)}">
           ${participant.status || "Pending"}
+        </span>
+        <br><br>
+        <span class="badge ${checkin ? "verified" : "pending"}">
+          ${arrivalStatus}
         </span>
       </td>
       <td>
@@ -271,6 +294,14 @@ function renderParticipants() {
           target="_blank"
         >
           Invitation
+        </a>
+
+        <a 
+          class="btn-link small-btn" 
+          href="checkin.html?id=${participant.id}" 
+          target="_blank"
+        >
+          Check-in
         </a>
 
         ${
@@ -295,6 +326,8 @@ function renderRecentParticipants() {
   }
 
   participants.slice(0, 6).forEach(participant => {
+    const checkin = getCheckinByParticipantId(participant.id);
+
     const item = document.createElement("div");
     item.className = "participant-item";
 
@@ -303,8 +336,8 @@ function renderRecentParticipants() {
         <p>${participant.full_name}</p>
         <span>${participant.company || "-"} • ${participant.table_number || "No table"}</span>
       </div>
-      <span class="badge ${getStatusClass(participant.status)}">
-        ${participant.status || "Pending"}
+      <span class="badge ${checkin ? "verified" : "pending"}">
+        ${checkin ? "Arrived" : "Not Arrived"}
       </span>
     `;
 
@@ -380,6 +413,13 @@ participantForm.addEventListener("submit", async function (e) {
 async function initApp() {
   await fetchEvents();
   await fetchParticipants();
+  await fetchCheckins();
+
+  renderDashboard();
+  renderEventOptions();
+  renderEvents();
+  renderParticipants();
+  renderRecentParticipants();
 }
 
 initApp();
