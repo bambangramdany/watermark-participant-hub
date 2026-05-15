@@ -9,8 +9,7 @@
 <body class="confirmation-page">
   <div class="confirmation-wrapper">
     <div class="confirmation-card">
-      <h1>Event Check-in</h1>
-      <p class="subtitle">Scan/check-in participant arrival.</p>
+      <div id="welcomeScreen" class="welcome-screen"></div>
 
       <div class="error-box" id="errorBox"></div>
       <div class="success-box" id="successBox"></div>
@@ -31,6 +30,7 @@
     let participants = JSON.parse(localStorage.getItem("wph_participants")) || [];
     let checkins = JSON.parse(localStorage.getItem("wph_checkins")) || [];
 
+    const welcomeScreen = document.getElementById("welcomeScreen");
     const guestBox = document.getElementById("guestBox");
     const errorBox = document.getElementById("errorBox");
     const successBox = document.getElementById("successBox");
@@ -54,6 +54,7 @@
       errorBox.style.display = "block";
       guestBox.style.display = "none";
       checkinBtn.style.display = "none";
+      welcomeScreen.style.display = "none";
     }
 
     function renderParticipant() {
@@ -66,10 +67,20 @@
 
       const existing = findCheckin();
 
+      welcomeScreen.innerHTML = `
+        <h1>Selamat Datang</h1>
+        <h2>${participant.name}</h2>
+        <p>${participant.company}</p>
+        <p>${getEventName(participant.eventId)}</p>
+        <div class="table-number">${participant.tableNumber || "Table belum ditentukan"}</div>
+      `;
+
       guestBox.innerHTML = `
         <p><strong>Name:</strong> ${participant.name}</p>
         <p><strong>Company:</strong> ${participant.company}</p>
         <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
+        <p><strong>Table:</strong> ${participant.tableNumber || "-"}</p>
+        <p><strong>Meal Notes:</strong> ${participant.mealNotes || "-"}</p>
         <p><strong>Status:</strong> ${participant.status}</p>
         <p><strong>Arrival:</strong> ${existing ? "Already Checked-in" : "Not Arrived"}</p>
         ${existing ? `<p><strong>Checked-in At:</strong> ${new Date(existing.checkedInAt).toLocaleString("id-ID")}</p>` : ""}
