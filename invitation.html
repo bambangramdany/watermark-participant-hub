@@ -9,18 +9,19 @@
 <body class="confirmation-page">
   <div class="confirmation-wrapper">
     <div class="invitation-card">
-
       <div id="invitationContent"></div>
 
-      <div class="qr-placeholder">
-        QR EVENT PASS
+      <div class="qr-placeholder" id="qrBox">
+        Loading QR...
       </div>
 
       <div class="event-pass-footer">
+        Please show this QR code at the registration desk.
+        <br />
         Watermark Participant Hub
       </div>
 
-      <br>
+      <br />
 
       <a href="index.html" class="btn-link">
         Back to Dashboard
@@ -32,44 +33,36 @@
     const params = new URLSearchParams(window.location.search);
     const participantId = params.get("id");
 
-    let events =
-      JSON.parse(localStorage.getItem("wph_events")) || [];
+    let events = JSON.parse(localStorage.getItem("wph_events")) || [];
+    let participants = JSON.parse(localStorage.getItem("wph_participants")) || [];
 
-    let participants =
-      JSON.parse(localStorage.getItem("wph_participants")) || [];
+    const invitationContent = document.getElementById("invitationContent");
+    const qrBox = document.getElementById("qrBox");
 
-    const invitationContent =
-      document.getElementById("invitationContent");
+    function getBaseUrl() {
+      return window.location.origin + window.location.pathname.replace("invitation.html", "");
+    }
 
-    function getEventName(eventId) {
-      const event = events.find(
-        item => item.id === eventId
-      );
-
-      return event ? event.name : "No Event";
+    function getCheckinUrl(participantId) {
+      return `${getBaseUrl()}checkin.html?id=${participantId}`;
     }
 
     function getEventDetail(eventId) {
-      return events.find(
-        item => item.id === eventId
-      );
+      return events.find(item => item.id === eventId);
     }
 
     function renderInvitation() {
-      const participant =
-        participants.find(
-          item => item.id === participantId
-        );
+      const participant = participants.find(item => item.id === participantId);
 
       if (!participant) {
-        invitationContent.innerHTML = `
-          <h2>Participant Not Found</h2>
-        `;
+        invitationContent.innerHTML = `<h2>Participant Not Found</h2>`;
+        qrBox.style.display = "none";
         return;
       }
 
-      const event =
-        getEventDetail(participant.eventId);
+      const event = getEventDetail(participant.eventId);
+      const checkinUrl = getCheckinUrl(participant.id);
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(checkinUrl)}`;
 
       invitationContent.innerHTML = `
         <h1>FINAL INVITATION</h1>
@@ -79,32 +72,26 @@
         </div>
 
         <h2>${participant.name}</h2>
-
         <p>${participant.company}</p>
 
-        <br>
+        <br />
 
-        <p>
-          ${getEventName(participant.eventId)}
-        </p>
+        <p>${event?.name || "No Event"}</p>
+        <p>${event?.date || "-"}</p>
+        <p>${event?.venue || "-"}</p>
 
-        <p>
-          ${event?.date || "-"}
-        </p>
+        <br />
 
-        <p>
-          ${event?.venue || "-"}
-        </p>
+        <h3>${participant.tableNumber || "General Seating"}</h3>
+        <p>${participant.mealNotes || ""}</p>
+      `;
 
-        <br>
-
-        <h3>
-          ${participant.tableNumber || "General Seating"}
-        </h3>
-
-        <p>
-          ${participant.mealNotes || ""}
-        </p>
+      qrBox.innerHTML = `
+        <img 
+          src="${qrUrl}" 
+          alt="QR Code Event Pass" 
+          style="width: 180px; height: 180px; border-radius: 12px;"
+        />
       `;
     }
 
