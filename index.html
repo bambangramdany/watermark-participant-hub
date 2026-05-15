@@ -148,6 +148,34 @@
 
   </main>
 
+<div class="modal" id="eventModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add New Event</h2>
+      <button class="close-btn" id="closeEventForm">×</button>
+    </div>
+
+    <form id="eventForm">
+      <label>Event Name</label>
+      <input type="text" id="eventName" required />
+
+      <label>Event Date</label>
+      <input type="date" id="eventDate" required />
+
+      <label>Venue</label>
+      <input type="text" id="eventVenue" required />
+
+      <label>Status</label>
+      <select id="eventStatus">
+        <option value="Draft">Draft</option>
+        <option value="Active">Active</option>
+      </select>
+
+      <button type="submit">Save Event</button>
+    </form>
+  </div>
+</div>  
+  
   <div class="toast" id="toast">
     Copied!
   </div>
