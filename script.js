@@ -5,13 +5,6 @@ const defaultEvents = [
     date: "2026-06-12",
     venue: "Jakarta Convention Center",
     status: "Active"
-  },
-  {
-    id: "event-002",
-    name: "Corporate Meeting 2026",
-    date: "2026-07-03",
-    venue: "Hotel Indonesia Kempinski",
-    status: "Draft"
   }
 ];
 
@@ -25,6 +18,8 @@ const defaultParticipants = [
     email: "bambang@example.com",
     status: "Verified",
     arrivalStatus: "Not Arrived",
+    tableNumber: "Table 8",
+    mealNotes: "No seafood",
     adminNotes: ""
   },
   {
@@ -36,6 +31,8 @@ const defaultParticipants = [
     email: "andi@example.com",
     status: "Pending",
     arrivalStatus: "Not Arrived",
+    tableNumber: "Table 10",
+    mealNotes: "",
     adminNotes: ""
   }
 ];
@@ -158,7 +155,7 @@ function renderNoShowList() {
   const notArrivedParticipants = participants.filter(p => !getCheckinByParticipantId(p.id));
 
   if (notArrivedParticipants.length === 0) {
-    list.innerHTML = `<p class="empty-state">All participants have arrived. Mantap, panitia bisa napas sedikit.</p>`;
+    list.innerHTML = `<p class="empty-state">All participants have arrived.</p>`;
     return;
   }
 
@@ -169,7 +166,7 @@ function renderNoShowList() {
     item.innerHTML = `
       <div>
         <p>${participant.name}</p>
-        <span>${participant.company}</span>
+        <span>${participant.company} • ${participant.tableNumber || "No table"}</span>
       </div>
       <span class="badge pending">Not Arrived</span>
     `;
@@ -237,7 +234,8 @@ function renderParticipantTable() {
   const filteredParticipants = participants.filter(participant => {
     const matchSearch =
       participant.name.toLowerCase().includes(searchValue) ||
-      participant.company.toLowerCase().includes(searchValue);
+      participant.company.toLowerCase().includes(searchValue) ||
+      (participant.tableNumber || "").toLowerCase().includes(searchValue);
 
     const matchStatus = !selectedStatus || participant.status === selectedStatus;
     const matchEvent = !selectedEvent || participant.eventId === selectedEvent;
@@ -267,8 +265,11 @@ function renderParticipantTable() {
       <td>${participant.name}</td>
       <td>${participant.company}</td>
       <td>${getEventName(participant.eventId)}</td>
+      <td>
+        <strong>${participant.tableNumber || "-"}</strong><br>
+        <span>${participant.mealNotes || "-"}</span>
+      </td>
       <td>${participant.whatsapp}</td>
-      <td>${participant.email}</td>
       <td>
         <span class="badge ${getStatusClass(participant.status)}">
           ${participant.status}
@@ -320,6 +321,8 @@ function openParticipantDetail(participantId) {
         <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
         <p><strong>WhatsApp:</strong> ${participant.whatsapp}</p>
         <p><strong>Email:</strong> ${participant.email}</p>
+        <p><strong>Table:</strong> ${participant.tableNumber || "-"}</p>
+        <p><strong>Meal Notes:</strong> ${participant.mealNotes || "-"}</p>
         <p><strong>Status:</strong> <span class="badge ${getStatusClass(participant.status)}">${participant.status}</span></p>
         <p><strong>Arrival:</strong> ${checkin ? "Arrived" : "Not Arrived"}</p>
         ${checkin ? `<p><strong>Checked-in At:</strong> ${new Date(checkin.checkedInAt).toLocaleString("id-ID")}</p>` : ""}
@@ -343,6 +346,8 @@ function openParticipantDetail(participantId) {
   `;
 
   document.getElementById("adminStatus").value = participant.status;
+  document.getElementById("adminTableNumber").value = participant.tableNumber || "";
+  document.getElementById("adminMealNotes").value = participant.mealNotes || "";
   document.getElementById("adminNotes").value = participant.adminNotes || "";
 
   detailModal.classList.add("show");
@@ -350,6 +355,8 @@ function openParticipantDetail(participantId) {
 
 function saveVerification() {
   const status = document.getElementById("adminStatus").value;
+  const tableNumber = document.getElementById("adminTableNumber").value;
+  const mealNotes = document.getElementById("adminMealNotes").value;
   const notes = document.getElementById("adminNotes").value;
 
   participants = participants.map(participant => {
@@ -357,6 +364,8 @@ function saveVerification() {
       return {
         ...participant,
         status,
+        tableNumber,
+        mealNotes,
         adminNotes: notes
       };
     }
@@ -368,7 +377,7 @@ function saveVerification() {
   detailModal.classList.remove("show");
   refreshApp();
 
-  showToast("Verification updated!");
+  showToast("Participant updated!");
 }
 
 function deleteEvent(index) {
@@ -406,6 +415,8 @@ function exportParticipantsCsv() {
       "Name",
       "Company",
       "Event",
+      "Table Number",
+      "Meal Notes",
       "WhatsApp",
       "Email",
       "Status",
@@ -421,6 +432,8 @@ function exportParticipantsCsv() {
       participant.name,
       participant.company,
       getEventName(participant.eventId),
+      participant.tableNumber || "",
+      participant.mealNotes || "",
       participant.whatsapp,
       participant.email,
       participant.status,
@@ -437,7 +450,7 @@ function exportParticipantsCsv() {
 
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "watermark-participants-arrival-report.csv";
+  link.download = "watermark-seating-arrival-report.csv";
   link.click();
 
   showToast("CSV exported!");
@@ -495,6 +508,8 @@ participantForm.addEventListener("submit", function (e) {
     company: document.getElementById("participantCompany").value,
     whatsapp: document.getElementById("participantWhatsapp").value,
     email: document.getElementById("participantEmail").value,
+    tableNumber: document.getElementById("participantTableNumber").value,
+    mealNotes: document.getElementById("participantMealNotes").value,
     status: document.getElementById("participantStatus").value,
     arrivalStatus: "Not Arrived",
     adminNotes: ""
