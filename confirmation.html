@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Participant Confirmation</title>
+  <title>Participant Confirmation - Watermark Participant Hub</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="confirmation-page">
@@ -17,9 +17,9 @@
         Terima kasih. Data konfirmasi Anda sudah berhasil dikirim.
       </div>
 
-      <div class="guest-box" id="guestBox"></div>
+      <div class="guest-box" id="guestBox">Loading participant data...</div>
 
-      <form id="confirmationForm">
+      <form id="confirmationForm" style="display:none;">
         <label>Attendance Confirmation</label>
         <select id="attendance" required>
           <option value="Attend">Attend</option>
@@ -52,156 +52,162 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+
   <script>
-    const defaultEvents = [
-      {
-        id: "event-001",
-        name: "Daikin National Gathering",
-        date: "2026-06-12",
-        venue: "Jakarta Convention Center",
-        status: "Active"
-      },
-      {
-        id: "event-002",
-        name: "Corporate Meeting 2026",
-        date: "2026-07-03",
-        venue: "Hotel Indonesia Kempinski",
-        status: "Draft"
-      }
-    ];
-
-    const defaultParticipants = [
-      {
-        id: "participant-001",
-        eventId: "event-001",
-        name: "Bambang Ramdany",
-        company: "PT Sinematik Anak Bangsa",
-        whatsapp: "081234567890",
-        email: "bambang@example.com",
-        status: "Confirmed"
-      },
-      {
-        id: "participant-002",
-        eventId: "event-001",
-        name: "Andi Pratama",
-        company: "PT Contoh Sejahtera",
-        whatsapp: "081298765432",
-        email: "andi@example.com",
-        status: "Pending"
-      }
-    ];
-
     const params = new URLSearchParams(window.location.search);
     const participantId = params.get("id");
 
-    let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
-    let participants = JSON.parse(localStorage.getItem("wph_participants")) || defaultParticipants;
-    let confirmations = JSON.parse(localStorage.getItem("wph_confirmations")) || [];
+    let participant = null;
+    let eventData = null;
+    let existingConfirmation = null;
 
     const guestBox = document.getElementById("guestBox");
     const errorBox = document.getElementById("errorBox");
     const successBox = document.getElementById("successBox");
     const confirmationForm = document.getElementById("confirmationForm");
 
-    function getEventName(eventId) {
-      const event = events.find(item => item.id === eventId);
-      return event ? event.name : "No Event";
-    }
-
-    function findParticipant() {
-      return participants.find(item => item.id === participantId);
-    }
-
-    function findExistingConfirmation() {
-      return confirmations.find(item => item.participantId === participantId);
-    }
-
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = "block";
-      confirmationForm.style.display = "none";
       guestBox.style.display = "none";
+      confirmationForm.style.display = "none";
     }
 
-    function renderParticipant() {
-      const participant = findParticipant();
-
+    async function fetchParticipant() {
       if (!participantId) {
         showError("Link peserta tidak valid. Mohon hubungi panitia.");
         return;
       }
 
-      if (!participant) {
-        showError("Data peserta tidak ditemukan. Mohon kembali ke dashboard dan gunakan link peserta yang benar.");
-        return;
-      }
+      const { data, error } = await supabaseClient
+        .from("participants")
+        .select("*")
+        .eq("id", participantId)
+        .single();
 
-      guestBox.innerHTML = `
-        <p><strong>Name:</strong> ${participant.name}</p>
-        <p><strong>Company:</strong> ${participant.company}</p>
-        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
-        <p><strong>WhatsApp:</strong> ${participant.whatsapp}</p>
-        <p><strong>Email:</strong> ${participant.email}</p>
-      `;
-
-      const existing = findExistingConfirmation();
-
-      if (existing) {
-        document.getElementById("attendance").value = existing.attendance;
-        document.getElementById("hotelNeeded").value = existing.hotelNeeded;
-        document.getElementById("transportNeeded").value = existing.transportNeeded;
-        document.getElementById("foodRestriction").value = existing.foodRestriction;
-        document.getElementById("notes").value = existing.notes;
-      }
-    }
-
-    confirmationForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const participant = findParticipant();
-
-      if (!participant) {
+      if (error || !data) {
+        console.error(error);
         showError("Data peserta tidak ditemukan. Mohon hubungi panitia.");
         return;
       }
 
-      const confirmationData = {
-        id: `confirmation-${Date.now()}`,
-        participantId: participant.id,
-        attendance: document.getElementById("attendance").value,
-        hotelNeeded: document.getElementById("hotelNeeded").value,
-        transportNeeded: document.getElementById("transportNeeded").value,
-        foodRestriction: document.getElementById("foodRestriction").value,
-        notes: document.getElementById("notes").value,
-        submittedAt: new Date().toISOString()
-      };
+      participant = data;
 
-      const existingIndex = confirmations.findIndex(item => item.participantId === participant.id);
+      await fetchEvent();
+      await fetchExistingConfirmation();
 
-      if (existingIndex >= 0) {
-        confirmations[existingIndex] = confirmationData;
-      } else {
-        confirmations.push(confirmationData);
+      renderParticipant();
+    }
+
+    async function fetchEvent() {
+      if (!participant.event_id) return;
+
+      const { data, error } = await supabaseClient
+        .from("events")
+        .select("*")
+        .eq("id", participant.event_id)
+        .single();
+
+      if (!error && data) {
+        eventData = data;
+      }
+    }
+
+    async function fetchExistingConfirmation() {
+      const { data, error } = await supabaseClient
+        .from("confirmations")
+        .select("*")
+        .eq("participant_id", participantId)
+        .maybeSingle();
+
+      if (!error && data) {
+        existingConfirmation = data;
+      }
+    }
+
+    function renderParticipant() {
+      guestBox.innerHTML = `
+        <p><strong>Name:</strong> ${participant.full_name}</p>
+        <p><strong>Company:</strong> ${participant.company || "-"}</p>
+        <p><strong>Event:</strong> ${eventData?.event_name || "-"}</p>
+        <p><strong>WhatsApp:</strong> ${participant.whatsapp || "-"}</p>
+        <p><strong>Email:</strong> ${participant.email || "-"}</p>
+      `;
+
+      if (existingConfirmation) {
+        document.getElementById("attendance").value = existingConfirmation.attendance || "Attend";
+        document.getElementById("hotelNeeded").value = existingConfirmation.hotel_needed || "Yes";
+        document.getElementById("transportNeeded").value = existingConfirmation.transport_needed || "Yes";
+        document.getElementById("foodRestriction").value = existingConfirmation.food_restriction || "";
+        document.getElementById("notes").value = existingConfirmation.notes || "";
       }
 
-      participants = participants.map(item => {
-        if (item.id === participant.id) {
-          return {
-            ...item,
-            status: confirmationData.attendance === "Attend" ? "Submitted" : "Not Attend"
-          };
-        }
-        return item;
-      });
+      confirmationForm.style.display = "flex";
+    }
 
-      localStorage.setItem("wph_confirmations", JSON.stringify(confirmations));
-      localStorage.setItem("wph_participants", JSON.stringify(participants));
+    async function saveConfirmation(payload) {
+      const existingCheck = await supabaseClient
+        .from("confirmations")
+        .select("id")
+        .eq("participant_id", participantId)
+        .maybeSingle();
 
-      successBox.style.display = "block";
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (existingCheck.data) {
+        const { error } = await supabaseClient
+          .from("confirmations")
+          .update(payload)
+          .eq("participant_id", participantId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabaseClient
+          .from("confirmations")
+          .insert([payload]);
+
+        if (error) throw error;
+      }
+    }
+
+    async function updateParticipantStatus(attendance) {
+      const newStatus = attendance === "Attend" ? "Submitted" : "Not Attend";
+
+      const { error } = await supabaseClient
+        .from("participants")
+        .update({ status: newStatus })
+        .eq("id", participantId);
+
+      if (error) throw error;
+    }
+
+    confirmationForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      try {
+        const attendance = document.getElementById("attendance").value;
+
+        const payload = {
+          participant_id: participantId,
+          attendance: attendance,
+          hotel_needed: document.getElementById("hotelNeeded").value,
+          transport_needed: document.getElementById("transportNeeded").value,
+          food_restriction: document.getElementById("foodRestriction").value,
+          notes: document.getElementById("notes").value
+        };
+
+        await saveConfirmation(payload);
+        await updateParticipantStatus(attendance);
+
+        successBox.style.display = "block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        console.error(error);
+        alert("Failed to submit confirmation.");
+      }
     });
 
-    renderParticipant();
+    fetchParticipant();
   </script>
 </body>
 </html>
