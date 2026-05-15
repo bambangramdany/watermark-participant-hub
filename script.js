@@ -257,9 +257,25 @@ function renderParticipants() {
         </span>
       </td>
       <td>
+        <a 
+          class="btn-link small-btn" 
+          href="confirmation.html?id=${participant.id}" 
+          target="_blank"
+        >
+          Confirm
+        </a>
+
+        <a 
+          class="btn-link small-btn detail-btn" 
+          href="invitation.html?id=${participant.id}" 
+          target="_blank"
+        >
+          Invitation
+        </a>
+
         ${
           isViewer
-            ? "-"
+            ? ""
             : `<button class="small-btn danger" onclick="deleteParticipant('${participant.id}')">Delete</button>`
         }
       </td>
