@@ -1,3 +1,7 @@
+// ======================
+// LOGIN CHECK
+// ======================
+
 const loggedUser =
   JSON.parse(
     localStorage.getItem(
@@ -10,6 +14,10 @@ if (!loggedUser) {
     "login.html";
 }
 
+// ======================
+// USER INFO
+// ======================
+
 document.getElementById(
   "userInfo"
 ).innerHTML = `
@@ -18,88 +26,140 @@ document.getElementById(
   (${loggedUser.role})
 `;
 
-const logoutBtn =
-  document.getElementById(
-    "logoutBtn"
+document
+  .getElementById("logoutBtn")
+  .addEventListener(
+    "click",
+    function () {
+      localStorage.removeItem(
+        "wph_logged_user"
+      );
+
+      window.location.href =
+        "login.html";
+    }
   );
 
-logoutBtn.addEventListener(
-  "click",
-  function () {
-    localStorage.removeItem(
-      "wph_logged_user"
-    );
-
-    window.location.href =
-      "login.html";
-  }
-);
-
 // ======================
-// ROLE PERMISSION
+// ROLE
 // ======================
-
-const isSuperAdmin =
-  loggedUser.role ===
-  "Super Admin";
-
-const isRegistration =
-  loggedUser.role ===
-  "Registration";
 
 const isViewer =
   loggedUser.role ===
   "Viewer";
 
 // ======================
-// DEFAULT DATA
+// LOCAL PARTICIPANT TEMP
 // ======================
-
-const defaultEvents = [
-  {
-    id: "event-001",
-    name: "Daikin National Gathering",
-    date: "2026-06-12",
-    venue: "JCC",
-    status: "Active"
-  }
-];
-
-const defaultParticipants = [
-  {
-    id: "participant-001",
-    name: "Bambang Ramdany",
-    company:
-      "PT Sinematik Anak Bangsa",
-    tableNumber: "Table 8",
-    status: "Finalized"
-  },
-  {
-    id: "participant-002",
-    name: "Andi Pratama",
-    company:
-      "PT Contoh Sejahtera",
-    tableNumber: "Table 12",
-    status: "Verified"
-  }
-];
-
-let events =
-  JSON.parse(
-    localStorage.getItem(
-      "wph_events"
-    )
-  ) || defaultEvents;
 
 let participants =
   JSON.parse(
     localStorage.getItem(
       "wph_participants"
     )
-  ) || defaultParticipants;
+  ) || [];
 
 // ======================
-// RENDER DASHBOARD
+// EVENTS FROM SUPABASE
+// ======================
+
+let events = [];
+
+// ======================
+// FETCH EVENTS
+// ======================
+
+async function fetchEvents() {
+  const { data, error } =
+    await supabaseClient
+      .from("events")
+      .select("*")
+      .order("created_at", {
+        ascending: false
+      });
+
+  if (error) {
+    console.error(error);
+    alert(
+      "Failed load events"
+    );
+    return;
+  }
+
+  events = data;
+
+  renderEvents();
+}
+
+// ======================
+// CREATE EVENT
+// ======================
+
+async function createEvent(
+  payload
+) {
+  const { error } =
+    await supabaseClient
+      .from("events")
+      .insert([
+        {
+          event_name:
+            payload.event_name,
+          event_date:
+            payload.event_date,
+          venue:
+            payload.venue,
+          status:
+            payload.status
+        }
+      ]);
+
+  if (error) {
+    console.error(error);
+
+    alert(
+      "Failed create event"
+    );
+
+    return;
+  }
+
+  fetchEvents();
+}
+
+// ======================
+// DELETE EVENT
+// ======================
+
+async function deleteEvent(id) {
+  const confirmDelete =
+    confirm(
+      "Delete this event?"
+    );
+
+  if (!confirmDelete) return;
+
+  const { error } =
+    await supabaseClient
+      .from("events")
+      .delete()
+      .eq("id", id);
+
+  if (error) {
+    console.error(error);
+
+    alert(
+      "Failed delete event"
+    );
+
+    return;
+  }
+
+  fetchEvents();
+}
+
+// ======================
+// DASHBOARD
 // ======================
 
 function renderDashboard() {
@@ -108,8 +168,9 @@ function renderDashboard() {
 
   const arrived =
     participants.filter(
-      p => p.arrivalStatus ===
-      "Arrived"
+      p =>
+        p.arrivalStatus ===
+        "Arrived"
     ).length;
 
   const notArrived =
@@ -140,7 +201,7 @@ function renderDashboard() {
 }
 
 // ======================
-// EVENT LIST
+// EVENT TABLE
 // ======================
 
 function renderEvents() {
@@ -156,11 +217,35 @@ function renderEvents() {
       document.createElement("tr");
 
     row.innerHTML = `
-      <td>${event.name}</td>
-      <td>${event.date}</td>
-      <td>${event.venue}</td>
-      <td>${event.status}</td>
+      <td>${event.event_name}</td>
+
+      <td>${event.event_date || "-"}</td>
+
+      <td>${event.venue || "-"}</td>
+
+      <td>
+        <span class="badge ${
+          event.status === "Active"
+            ? "active"
+            : "draft"
+        }">
+          ${event.status}
+        </span>
+      </td>
     `;
+
+    if (!isViewer) {
+      row.innerHTML += `
+        <td>
+          <button
+            class="small-btn danger"
+            onclick="deleteEvent('${event.id}')"
+          >
+            Delete
+          </button>
+        </td>
+      `;
+    }
 
     table.appendChild(row);
   });
@@ -211,7 +296,7 @@ function renderNoShowList() {
 }
 
 // ======================
-// PARTICIPANT TABLE
+// PARTICIPANTS TEMP
 // ======================
 
 function renderParticipants() {
@@ -224,32 +309,6 @@ function renderParticipants() {
 
   participants.forEach(
     participant => {
-
-      let actionButtons = `
-        <a
-          class="btn-link small-btn"
-          href="invitation.html?id=${participant.id}"
-          target="_blank"
-        >
-          Invitation
-        </a>
-      `;
-
-      if (
-        isSuperAdmin ||
-        isRegistration
-      ) {
-        actionButtons += `
-          <a
-            class="btn-link small-btn"
-            href="checkin.html?id=${participant.id}"
-            target="_blank"
-          >
-            Check-in
-          </a>
-        `;
-      }
-
       const row =
         document.createElement("tr");
 
@@ -267,7 +326,13 @@ function renderParticipants() {
         </td>
 
         <td>
-          ${actionButtons}
+          <a
+            class="btn-link small-btn"
+            href="invitation.html?id=${participant.id}"
+            target="_blank"
+          >
+            Invitation
+          </a>
         </td>
       `;
 
@@ -277,24 +342,98 @@ function renderParticipants() {
 }
 
 // ======================
-// PERMISSION HIDE
+// MODAL
 // ======================
 
-if (isViewer) {
+const eventModal =
+  document.getElementById(
+    "eventModal"
+  );
+
+const openEventForm =
   document.getElementById(
     "openEventForm"
-  ).style.display = "none";
+  );
 
+const closeEventForm =
   document.getElementById(
-    "openParticipantForm"
-  ).style.display = "none";
+    "closeEventForm"
+  );
+
+const eventForm =
+  document.getElementById(
+    "eventForm"
+  );
+
+if (!isViewer) {
+  openEventForm.addEventListener(
+    "click",
+    () => {
+      eventModal.classList.add(
+        "show"
+      );
+    }
+  );
+} else {
+  openEventForm.style.display =
+    "none";
 }
+
+closeEventForm.addEventListener(
+  "click",
+  () => {
+    eventModal.classList.remove(
+      "show"
+    );
+  }
+);
+
+// ======================
+// SUBMIT EVENT
+// ======================
+
+eventForm.addEventListener(
+  "submit",
+  async function (e) {
+    e.preventDefault();
+
+    const payload = {
+      event_name:
+        document.getElementById(
+          "eventName"
+        ).value,
+
+      event_date:
+        document.getElementById(
+          "eventDate"
+        ).value,
+
+      venue:
+        document.getElementById(
+          "eventVenue"
+        ).value,
+
+      status:
+        document.getElementById(
+          "eventStatus"
+        ).value
+    };
+
+    await createEvent(payload);
+
+    eventForm.reset();
+
+    eventModal.classList.remove(
+      "show"
+    );
+  }
+);
 
 // ======================
 // INIT
 // ======================
 
 renderDashboard();
-renderEvents();
 renderNoShowList();
 renderParticipants();
+fetchEvents();
