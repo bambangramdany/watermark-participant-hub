@@ -1,1 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check-in - Watermark Participant Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="confirmation-page">
+  <div class="confirmation-wrapper">
+    <div class="confirmation-card">
+      <h1>Event Check-in</h1>
+      <p class="subtitle">Scan/check-in participant arrival.</p>
 
+      <div class="error-box" id="errorBox"></div>
+      <div class="success-box" id="successBox"></div>
+
+      <div class="guest-box" id="guestBox"></div>
+
+      <button id="checkinBtn">Check-in Participant</button>
+      <br><br>
+      <a href="index.html" class="btn-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const participantId = params.get("id");
+
+    let events = JSON.parse(localStorage.getItem("wph_events")) || [];
+    let participants = JSON.parse(localStorage.getItem("wph_participants")) || [];
+    let checkins = JSON.parse(localStorage.getItem("wph_checkins")) || [];
+
+    const guestBox = document.getElementById("guestBox");
+    const errorBox = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+    const checkinBtn = document.getElementById("checkinBtn");
+
+    function getEventName(eventId) {
+      const event = events.find(item => item.id === eventId);
+      return event ? event.name : "No Event";
+    }
+
+    function findParticipant() {
+      return participants.find(item => item.id === participantId);
+    }
+
+    function findCheckin() {
+      return checkins.find(item => item.participantId === participantId);
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+      guestBox.style.display = "none";
+      checkinBtn.style.display = "none";
+    }
+
+    function renderParticipant() {
+      const participant = findParticipant();
+
+      if (!participantId || !participant) {
+        showError("Data peserta tidak ditemukan. Mohon gunakan link check-in yang benar.");
+        return;
+      }
+
+      const existing = findCheckin();
+
+      guestBox.innerHTML = `
+        <p><strong>Name:</strong> ${participant.name}</p>
+        <p><strong>Company:</strong> ${participant.company}</p>
+        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
+        <p><strong>Status:</strong> ${participant.status}</p>
+        <p><strong>Arrival:</strong> ${existing ? "Already Checked-in" : "Not Arrived"}</p>
+        ${existing ? `<p><strong>Checked-in At:</strong> ${new Date(existing.checkedInAt).toLocaleString("id-ID")}</p>` : ""}
+      `;
+
+      if (existing) {
+        successBox.textContent = "Peserta ini sudah check-in sebelumnya.";
+        successBox.style.display = "block";
+        checkinBtn.textContent = "Already Checked-in";
+        checkinBtn.disabled = true;
+      }
+    }
+
+    checkinBtn.addEventListener("click", function () {
+      const participant = findParticipant();
+
+      if (!participant) {
+        showError("Data peserta tidak ditemukan.");
+        return;
+      }
+
+      const existing = findCheckin();
+
+      if (existing) {
+        successBox.textContent = "Peserta ini sudah check-in.";
+        successBox.style.display = "block";
+        return;
+      }
+
+      const newCheckin = {
+        id: `checkin-${Date.now()}`,
+        participantId: participant.id,
+        checkedInAt: new Date().toISOString()
+      };
+
+      checkins.push(newCheckin);
+
+      participants = participants.map(item => {
+        if (item.id === participant.id) {
+          return {
+            ...item,
+            arrivalStatus: "Arrived",
+            checkedInAt: newCheckin.checkedInAt
+          };
+        }
+
+        return item;
+      });
+
+      localStorage.setItem("wph_checkins", JSON.stringify(checkins));
+      localStorage.setItem("wph_participants", JSON.stringify(participants));
+
+      successBox.textContent = "Check-in berhasil disimpan.";
+      successBox.style.display = "block";
+
+      checkinBtn.textContent = "Already Checked-in";
+      checkinBtn.disabled = true;
+
+      renderParticipant();
+    });
+
+    renderParticipant();
+  </script>
+</body>
+</html>
