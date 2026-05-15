@@ -41,7 +41,7 @@
         <h2 id="totalParticipants">0</h2>
       </div>
       <div class="card">
-        <p>Confirmed</p>
+        <p>Submitted / Confirmed</p>
         <h2 id="confirmedParticipants">0</h2>
       </div>
       <div class="card">
@@ -77,7 +77,7 @@
       <div class="section-header">
         <div>
           <h3>Participant Database</h3>
-          <p>Daftar peserta, status konfirmasi, dan personal confirmation link.</p>
+          <p>Review data peserta, confirmation status, dan admin verification.</p>
         </div>
       </div>
 
@@ -158,6 +158,34 @@
 
         <button type="submit">Save Participant</button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content large-modal">
+      <div class="modal-header">
+        <h2>Participant Detail</h2>
+        <button class="close-btn" id="closeDetailModal">×</button>
+      </div>
+
+      <div id="detailContent"></div>
+
+      <div class="verification-box">
+        <label>Admin Verification Status</label>
+        <select id="adminStatus">
+          <option value="Pending">Pending</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Verified">Verified</option>
+          <option value="Need Revision">Need Revision</option>
+          <option value="Finalized">Finalized</option>
+          <option value="Not Attend">Not Attend</option>
+        </select>
+
+        <label>Admin Notes</label>
+        <textarea id="adminNotes" placeholder="Catatan internal panitia, misalnya perlu follow up data KTP, request hotel belum jelas, dll."></textarea>
+
+        <button id="saveVerificationBtn">Save Verification</button>
+      </div>
     </div>
   </div>
 
