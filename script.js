@@ -86,7 +86,8 @@ async function fetchParticipants() {
 async function fetchCheckins() {
   const { data, error } = await supabaseClient
     .from("checkins")
-    .select("*");
+    .select("*")
+    .order("checked_in_at", { ascending: false });
 
   if (error) {
     console.error(error);
@@ -95,6 +96,18 @@ async function fetchCheckins() {
   }
 
   checkins = data || [];
+}
+
+async function refreshRealtimeData() {
+  await fetchEvents();
+  await fetchParticipants();
+  await fetchCheckins();
+
+  renderDashboard();
+  renderEventOptions();
+  renderEvents();
+  renderParticipants();
+  renderRecentParticipants();
 }
 
 async function createEvent(payload) {
@@ -109,7 +122,6 @@ async function createEvent(payload) {
   }
 
   showToast("Event saved!");
-  await initApp();
 }
 
 async function createParticipant(payload) {
@@ -124,7 +136,6 @@ async function createParticipant(payload) {
   }
 
   showToast("Participant saved!");
-  await initApp();
 }
 
 async function deleteEvent(id) {
@@ -143,7 +154,6 @@ async function deleteEvent(id) {
   }
 
   showToast("Event deleted!");
-  await initApp();
 }
 
 async function deleteParticipant(id) {
@@ -162,7 +172,6 @@ async function deleteParticipant(id) {
   }
 
   showToast("Participant deleted!");
-  await initApp();
 }
 
 function renderDashboard() {
@@ -280,27 +289,15 @@ function renderParticipants() {
         </span>
       </td>
       <td>
-        <a 
-          class="btn-link small-btn" 
-          href="confirmation.html?id=${participant.id}" 
-          target="_blank"
-        >
+        <a class="btn-link small-btn" href="confirmation.html?id=${participant.id}" target="_blank">
           Confirm
         </a>
 
-        <a 
-          class="btn-link small-btn detail-btn" 
-          href="invitation.html?id=${participant.id}" 
-          target="_blank"
-        >
+        <a class="btn-link small-btn detail-btn" href="invitation.html?id=${participant.id}" target="_blank">
           Invitation
         </a>
 
-        <a 
-          class="btn-link small-btn" 
-          href="checkin.html?id=${participant.id}" 
-          target="_blank"
-        >
+        <a class="btn-link small-btn" href="checkin.html?id=${participant.id}" target="_blank">
           Check-in
         </a>
 
@@ -410,16 +407,36 @@ participantForm.addEventListener("submit", async function (e) {
   participantModal.classList.remove("show");
 });
 
-async function initApp() {
-  await fetchEvents();
-  await fetchParticipants();
-  await fetchCheckins();
+function setupRealtimeSubscriptions() {
+  supabaseClient
+    .channel("watermark-participant-hub-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "events" },
+      async () => {
+        await refreshRealtimeData();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "participants" },
+      async () => {
+        await refreshRealtimeData();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "checkins" },
+      async () => {
+        await refreshRealtimeData();
+      }
+    )
+    .subscribe();
+}
 
-  renderDashboard();
-  renderEventOptions();
-  renderEvents();
-  renderParticipants();
-  renderRecentParticipants();
+async function initApp() {
+  await refreshRealtimeData();
+  setupRealtimeSubscriptions();
 }
 
 initApp();
