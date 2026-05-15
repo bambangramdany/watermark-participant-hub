@@ -47,6 +47,7 @@ const defaultParticipants = [
 
 let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
 let participants = JSON.parse(localStorage.getItem("wph_participants")) || defaultParticipants;
+let confirmations = JSON.parse(localStorage.getItem("wph_confirmations")) || [];
 
 const eventModal = document.getElementById("eventModal");
 const participantModal = document.getElementById("participantModal");
@@ -71,6 +72,10 @@ function saveParticipants() {
   localStorage.setItem("wph_participants", JSON.stringify(participants));
 }
 
+function saveConfirmations() {
+  localStorage.setItem("wph_confirmations", JSON.stringify(confirmations));
+}
+
 function getEventName(eventId) {
   const event = events.find(item => item.id === eventId);
   return event ? event.name : "No Event";
@@ -80,11 +85,36 @@ function getStatusClass(status) {
   return status.toLowerCase();
 }
 
+function getConfirmationByParticipantId(participantId) {
+  return confirmations.find(item => item.participantId === participantId);
+}
+
+function getConfirmationUrl(participantId) {
+  const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
+  return `${baseUrl}confirmation.html?id=${participantId}`;
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 1800);
+}
+
+function copyConfirmationLink(participantId) {
+  const link = getConfirmationUrl(participantId);
+  navigator.clipboard.writeText(link);
+  showToast("Confirmation link copied!");
+}
+
 function renderDashboard() {
   document.getElementById("totalEvents").textContent = events.length;
   document.getElementById("totalParticipants").textContent = participants.length;
 
-  const confirmed = participants.filter(p => p.status === "Confirmed").length;
+  const confirmed = participants.filter(p => p.status === "Confirmed" || p.status === "Submitted").length;
   const pending = participants.filter(p => p.status === "Pending").length;
 
   document.getElementById("confirmedParticipants").textContent = confirmed;
@@ -179,13 +209,16 @@ function renderParticipantTable() {
   if (participants.length === 0) {
     table.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-state">No participant data yet.</td>
+        <td colspan="8" class="empty-state">No participant data yet.</td>
       </tr>
     `;
     return;
   }
 
   participants.forEach((participant, index) => {
+    const confirmation = getConfirmationByParticipantId(participant.id);
+    const confirmationStatus = confirmation ? "Submitted" : "Not Submitted";
+
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -198,6 +231,13 @@ function renderParticipantTable() {
         <span class="badge ${getStatusClass(participant.status)}">
           ${participant.status}
         </span>
+      </td>
+      <td>
+        <div style="margin-bottom:6px;">
+          <span class="badge ${confirmation ? "submitted" : "pending"}">${confirmationStatus}</span>
+        </div>
+        <a class="btn-link small-btn" href="${getConfirmationUrl(participant.id)}" target="_blank">Open</a>
+        <button class="small-btn copy-btn" onclick="copyConfirmationLink('${participant.id}')">Copy Link</button>
       </td>
       <td>
         <button class="small-btn danger" onclick="deleteParticipant(${index})">Delete</button>
@@ -229,8 +269,12 @@ function deleteParticipant(index) {
   const confirmDelete = confirm("Are you sure you want to delete this participant?");
   if (!confirmDelete) return;
 
+  const deletedParticipant = participants[index];
   participants.splice(index, 1);
+  confirmations = confirmations.filter(item => item.participantId !== deletedParticipant.id);
+
   saveParticipants();
+  saveConfirmations();
   refreshApp();
 }
 
