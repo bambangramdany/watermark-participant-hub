@@ -9,26 +9,33 @@
 <body class="confirmation-page">
   <div class="confirmation-wrapper">
     <div class="confirmation-card">
-      <div id="welcomeScreen" class="welcome-screen"></div>
+      <div id="welcomeScreen" class="welcome-screen">
+        Loading participant data...
+      </div>
 
       <div class="error-box" id="errorBox"></div>
       <div class="success-box" id="successBox"></div>
 
       <div class="guest-box" id="guestBox"></div>
 
-      <button id="checkinBtn">Check-in Participant</button>
+      <button id="checkinBtn" style="display:none;">Check-in Participant</button>
+
       <br><br>
+
       <a href="index.html" class="btn-link">Back to Dashboard</a>
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const participantId = params.get("id");
 
-    let events = JSON.parse(localStorage.getItem("wph_events")) || [];
-    let participants = JSON.parse(localStorage.getItem("wph_participants")) || [];
-    let checkins = JSON.parse(localStorage.getItem("wph_checkins")) || [];
+    let participant = null;
+    let eventData = null;
+    let existingCheckin = null;
 
     const welcomeScreen = document.getElementById("welcomeScreen");
     const guestBox = document.getElementById("guestBox");
@@ -36,113 +43,139 @@
     const successBox = document.getElementById("successBox");
     const checkinBtn = document.getElementById("checkinBtn");
 
-    function getEventName(eventId) {
-      const event = events.find(item => item.id === eventId);
-      return event ? event.name : "No Event";
-    }
-
-    function findParticipant() {
-      return participants.find(item => item.id === participantId);
-    }
-
-    function findCheckin() {
-      return checkins.find(item => item.participantId === participantId);
-    }
-
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = "block";
+      welcomeScreen.style.display = "none";
       guestBox.style.display = "none";
       checkinBtn.style.display = "none";
-      welcomeScreen.style.display = "none";
     }
 
-    function renderParticipant() {
-      const participant = findParticipant();
-
-      if (!participantId || !participant) {
-        showError("Data peserta tidak ditemukan. Mohon gunakan link check-in yang benar.");
+    async function fetchParticipant() {
+      if (!participantId) {
+        showError("Link check-in tidak valid. Mohon hubungi panitia.");
         return;
       }
 
-      const existing = findCheckin();
+      const { data, error } = await supabaseClient
+        .from("participants")
+        .select("*")
+        .eq("id", participantId)
+        .single();
 
-      welcomeScreen.innerHTML = `
-        <h1>Selamat Datang</h1>
-        <h2>${participant.name}</h2>
-        <p>${participant.company}</p>
-        <p>${getEventName(participant.eventId)}</p>
-        <div class="table-number">${participant.tableNumber || "Table belum ditentukan"}</div>
-      `;
-
-      guestBox.innerHTML = `
-        <p><strong>Name:</strong> ${participant.name}</p>
-        <p><strong>Company:</strong> ${participant.company}</p>
-        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
-        <p><strong>Table:</strong> ${participant.tableNumber || "-"}</p>
-        <p><strong>Meal Notes:</strong> ${participant.mealNotes || "-"}</p>
-        <p><strong>Status:</strong> ${participant.status}</p>
-        <p><strong>Arrival:</strong> ${existing ? "Already Checked-in" : "Not Arrived"}</p>
-        ${existing ? `<p><strong>Checked-in At:</strong> ${new Date(existing.checkedInAt).toLocaleString("id-ID")}</p>` : ""}
-      `;
-
-      if (existing) {
-        successBox.textContent = "Peserta ini sudah check-in sebelumnya.";
-        successBox.style.display = "block";
-        checkinBtn.textContent = "Already Checked-in";
-        checkinBtn.disabled = true;
-      }
-    }
-
-    checkinBtn.addEventListener("click", function () {
-      const participant = findParticipant();
-
-      if (!participant) {
+      if (error || !data) {
+        console.error(error);
         showError("Data peserta tidak ditemukan.");
         return;
       }
 
-      const existing = findCheckin();
+      participant = data;
 
-      if (existing) {
-        successBox.textContent = "Peserta ini sudah check-in.";
+      await fetchEvent();
+      await fetchExistingCheckin();
+      renderParticipant();
+    }
+
+    async function fetchEvent() {
+      if (!participant.event_id) return;
+
+      const { data, error } = await supabaseClient
+        .from("events")
+        .select("*")
+        .eq("id", participant.event_id)
+        .single();
+
+      if (!error && data) {
+        eventData = data;
+      }
+    }
+
+    async function fetchExistingCheckin() {
+      const { data, error } = await supabaseClient
+        .from("checkins")
+        .select("*")
+        .eq("participant_id", participantId)
+        .maybeSingle();
+
+      if (!error && data) {
+        existingCheckin = data;
+      }
+    }
+
+    function renderParticipant() {
+      welcomeScreen.innerHTML = `
+        <h1>Selamat Datang</h1>
+        <h2>${participant.full_name}</h2>
+        <p>${participant.company || "-"}</p>
+        <p>${eventData?.event_name || "-"}</p>
+        <div class="table-number">${participant.table_number || "Table belum ditentukan"}</div>
+      `;
+
+      guestBox.innerHTML = `
+        <p><strong>Name:</strong> ${participant.full_name}</p>
+        <p><strong>Company:</strong> ${participant.company || "-"}</p>
+        <p><strong>Event:</strong> ${eventData?.event_name || "-"}</p>
+        <p><strong>Table:</strong> ${participant.table_number || "-"}</p>
+        <p><strong>Meal Notes:</strong> ${participant.meal_notes || "-"}</p>
+        <p><strong>Status:</strong> ${participant.status || "Pending"}</p>
+        <p><strong>Arrival:</strong> ${existingCheckin ? "Already Checked-in" : "Not Arrived"}</p>
+        ${
+          existingCheckin
+            ? `<p><strong>Checked-in At:</strong> ${new Date(existingCheckin.checked_in_at).toLocaleString("id-ID")}</p>`
+            : ""
+        }
+      `;
+
+      if (existingCheckin) {
+        successBox.textContent = "Peserta ini sudah check-in sebelumnya.";
         successBox.style.display = "block";
+        checkinBtn.style.display = "inline-block";
+        checkinBtn.textContent = "Already Checked-in";
+        checkinBtn.disabled = true;
         return;
       }
 
-      const newCheckin = {
-        id: `checkin-${Date.now()}`,
-        participantId: participant.id,
-        checkedInAt: new Date().toISOString()
-      };
+      checkinBtn.style.display = "inline-block";
+      checkinBtn.disabled = false;
+      checkinBtn.textContent = "Check-in Participant";
+    }
 
-      checkins.push(newCheckin);
+    checkinBtn.addEventListener("click", async function () {
+      try {
+        const { data: checkExisting } = await supabaseClient
+          .from("checkins")
+          .select("*")
+          .eq("participant_id", participantId)
+          .maybeSingle();
 
-      participants = participants.map(item => {
-        if (item.id === participant.id) {
-          return {
-            ...item,
-            arrivalStatus: "Arrived",
-            checkedInAt: newCheckin.checkedInAt
-          };
+        if (checkExisting) {
+          existingCheckin = checkExisting;
+          renderParticipant();
+          return;
         }
 
-        return item;
-      });
+        const { error } = await supabaseClient
+          .from("checkins")
+          .insert([
+            {
+              participant_id: participantId
+            }
+          ]);
 
-      localStorage.setItem("wph_checkins", JSON.stringify(checkins));
-      localStorage.setItem("wph_participants", JSON.stringify(participants));
+        if (error) throw error;
 
-      successBox.textContent = "Check-in berhasil disimpan.";
-      successBox.style.display = "block";
+        successBox.textContent = "Check-in berhasil disimpan.";
+        successBox.style.display = "block";
 
-      checkinBtn.textContent = "Already Checked-in";
-      checkinBtn.disabled = true;
-
-      renderParticipant();
+        await fetchExistingCheckin();
+        renderParticipant();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to check-in participant.");
+      }
     });
 
-    renderParticipant();
+    fetchParticipant();
   </script>
 </body>
 </html>
