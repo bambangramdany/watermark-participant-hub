@@ -514,3 +514,36 @@ textarea {
   font-size: 14px;
   min-width: 220px;
 }
+
+.welcome-screen {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.welcome-screen h1 {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.welcome-screen h2 {
+  font-size: 30px;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+
+.welcome-screen p {
+  font-size: 20px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.table-number {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 14px 24px;
+  background: #0f172a;
+  color: white;
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: bold;
+}
