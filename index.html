@@ -24,7 +24,7 @@
     <header class="topbar">
       <div>
         <h1>Dashboard</h1>
-        <p>Event registration & participant management system</p>
+        <p>Event registration, seating arrangement & check-in system</p>
       </div>
 
       <div class="button-group">
@@ -84,7 +84,7 @@
       <div class="section-header">
         <div>
           <h3>Participant Database</h3>
-          <p>Track confirmation, verification, arrival status, dan export report.</p>
+          <p>Track confirmation, verification, seating, arrival status, dan export report.</p>
         </div>
 
         <button id="exportCsvBtn">Export CSV</button>
@@ -113,8 +113,8 @@
             <th>Name</th>
             <th>Company</th>
             <th>Event</th>
+            <th>Table</th>
             <th>WhatsApp</th>
-            <th>Email</th>
             <th>Status</th>
             <th>Confirmation & Check-in</th>
             <th>Action</th>
@@ -177,6 +177,12 @@
         <label>Event</label>
         <select id="participantEvent" required></select>
 
+        <label>Table Number</label>
+        <input type="text" id="participantTableNumber" placeholder="Contoh: Table 8 / VIP 1 / A-12" />
+
+        <label>Meal Notes</label>
+        <input type="text" id="participantMealNotes" placeholder="Contoh: No seafood / Vegetarian / Halal only" />
+
         <label>Status</label>
         <select id="participantStatus">
           <option value="Pending">Pending</option>
@@ -210,6 +216,12 @@
           <option value="Finalized">Finalized</option>
           <option value="Not Attend">Not Attend</option>
         </select>
+
+        <label>Table Number</label>
+        <input type="text" id="adminTableNumber" placeholder="Contoh: Table 8" />
+
+        <label>Meal Notes</label>
+        <input type="text" id="adminMealNotes" placeholder="Contoh: No seafood / Vegetarian" />
 
         <label>Admin Notes</label>
         <textarea id="adminNotes" placeholder="Catatan internal panitia"></textarea>
