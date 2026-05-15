@@ -53,6 +53,7 @@ body {
 .main {
   flex: 1;
   padding: 32px;
+  overflow-x: auto;
 }
 
 .topbar {
@@ -60,6 +61,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
+  gap: 16px;
 }
 
 .topbar h1 {
@@ -69,6 +71,12 @@ body {
 .topbar p {
   color: #64748b;
   margin-top: 6px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 button {
@@ -83,6 +91,28 @@ button {
 
 button:hover {
   background: #0369a1;
+}
+
+.secondary-btn {
+  background: #0f172a;
+}
+
+.secondary-btn:hover {
+  background: #1e293b;
+}
+
+.small-btn {
+  padding: 7px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.danger {
+  background: #dc2626;
+}
+
+.danger:hover {
+  background: #b91c1c;
 }
 
 .cards {
@@ -113,6 +143,7 @@ button:hover {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 18px;
+  margin-bottom: 18px;
 }
 
 .panel {
@@ -122,13 +153,31 @@ button:hover {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
+.full-panel {
+  margin-top: 18px;
+}
+
 .panel h3 {
+  margin-bottom: 8px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 18px;
+}
+
+.section-header p {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 4px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 760px;
 }
 
 th,
@@ -136,6 +185,7 @@ td {
   text-align: left;
   padding: 14px 10px;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
 }
 
 th {
@@ -144,18 +194,21 @@ th {
 }
 
 .badge {
+  display: inline-block;
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: bold;
 }
 
-.badge.active {
+.badge.active,
+.badge.confirmed {
   background: #dcfce7;
   color: #166534;
 }
 
-.badge.draft {
+.badge.draft,
+.badge.pending {
   background: #fef3c7;
   color: #92400e;
 }
@@ -163,6 +216,7 @@ th {
 .participant-item {
   display: flex;
   justify-content: space-between;
+  gap: 14px;
   padding: 14px 0;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -174,27 +228,6 @@ th {
 .participant-item span {
   font-size: 13px;
   color: #64748b;
-}
-
-@media (max-width: 900px) {
-  body {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-
-  .cards,
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
 }
 
 .modal {
@@ -259,4 +292,30 @@ form select {
   border-radius: 10px;
   font-size: 14px;
   margin-bottom: 8px;
+}
+
+.empty-state {
+  color: #64748b;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+@media (max-width: 900px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .cards,
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
