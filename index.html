@@ -7,14 +7,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
   <aside class="sidebar">
-    <h2>
-      Watermark
-      <br>
-      <span>Participant Hub</span>
-    </h2>
-
+    <h2>Watermark<br><span>Participant Hub</span></h2>
     <nav>
       <a class="active">Dashboard</a>
       <a>Events</a>
@@ -26,39 +20,24 @@
   </aside>
 
   <main class="main">
-
     <header class="topbar">
-
       <div>
         <h1>Dashboard</h1>
-
         <p id="userInfo"></p>
       </div>
 
       <div class="button-group">
-
-        <button id="openEventForm">
-          + New Event
-        </button>
-
-        <button
-          id="openParticipantForm"
-          class="secondary-btn"
-        >
-          + New Participant
-        </button>
-
-        <button
-          id="logoutBtn"
-          class="danger"
-        >
-          Logout
-        </button>
-
+        <button id="openEventForm">+ New Event</button>
+        <button id="openParticipantForm" class="secondary-btn">+ New Participant</button>
+        <button id="logoutBtn" class="danger">Logout</button>
       </div>
     </header>
 
     <section class="cards">
+      <div class="card">
+        <p>Total Events</p>
+        <h2 id="totalEvents">0</h2>
+      </div>
 
       <div class="card">
         <p>Total Participants</p>
@@ -66,28 +45,19 @@
       </div>
 
       <div class="card">
-        <p>Arrived</p>
-        <h2 id="arrivedParticipants">0</h2>
+        <p>Verified / Finalized</p>
+        <h2 id="verifiedParticipants">0</h2>
       </div>
 
       <div class="card">
-        <p>Not Arrived</p>
-        <h2 id="notArrivedParticipants">0</h2>
+        <p>Pending</p>
+        <h2 id="pendingParticipants">0</h2>
       </div>
-
-      <div class="card">
-        <p>Arrival Rate</p>
-        <h2 id="arrivalRate">0%</h2>
-      </div>
-
     </section>
 
     <section class="content-grid">
-
       <div class="panel">
-
         <h3>Event List</h3>
-
         <table>
           <thead>
             <tr>
@@ -98,92 +68,117 @@
               <th>Action</th>
             </tr>
           </thead>
-
           <tbody id="eventTable"></tbody>
         </table>
-
       </div>
 
       <div class="panel">
-
-        <h3>No-show / Not Arrived</h3>
-
-        <div id="noShowList"></div>
-
+        <h3>Recent Participants</h3>
+        <div id="recentParticipants"></div>
       </div>
-
     </section>
 
     <section class="panel full-panel">
-
       <div class="section-header">
-
         <div>
           <h3>Participant Database</h3>
-
-          <p>
-            Manage participant registration,
-            seating arrangement & arrival.
-          </p>
+          <p>Data peserta sudah tersimpan di Supabase.</p>
         </div>
-
       </div>
 
       <table>
-
         <thead>
           <tr>
             <th>Name</th>
             <th>Company</th>
+            <th>Event</th>
+            <th>WhatsApp</th>
+            <th>Email</th>
             <th>Table</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th>Action</th>
           </tr>
         </thead>
-
         <tbody id="participantTable"></tbody>
-
       </table>
-
     </section>
-
   </main>
 
-<div class="modal" id="eventModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Add New Event</h2>
-      <button class="close-btn" id="closeEventForm">×</button>
+  <div class="modal" id="eventModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Event</h2>
+        <button class="close-btn" id="closeEventForm">×</button>
+      </div>
+
+      <form id="eventForm">
+        <label>Event Name</label>
+        <input type="text" id="eventName" required />
+
+        <label>Event Date</label>
+        <input type="date" id="eventDate" required />
+
+        <label>Venue</label>
+        <input type="text" id="eventVenue" required />
+
+        <label>Status</label>
+        <select id="eventStatus">
+          <option value="Draft">Draft</option>
+          <option value="Active">Active</option>
+        </select>
+
+        <button type="submit">Save Event</button>
+      </form>
     </div>
-
-    <form id="eventForm">
-      <label>Event Name</label>
-      <input type="text" id="eventName" required />
-
-      <label>Event Date</label>
-      <input type="date" id="eventDate" required />
-
-      <label>Venue</label>
-      <input type="text" id="eventVenue" required />
-
-      <label>Status</label>
-      <select id="eventStatus">
-        <option value="Draft">Draft</option>
-        <option value="Active">Active</option>
-      </select>
-
-      <button type="submit">Save Event</button>
-    </form>
   </div>
-</div>  
-  
-  <div class="toast" id="toast">
-    Copied!
+
+  <div class="modal" id="participantModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Participant</h2>
+        <button class="close-btn" id="closeParticipantForm">×</button>
+      </div>
+
+      <form id="participantForm">
+        <label>Full Name</label>
+        <input type="text" id="participantName" required />
+
+        <label>Company</label>
+        <input type="text" id="participantCompany" />
+
+        <label>WhatsApp</label>
+        <input type="text" id="participantWhatsapp" />
+
+        <label>Email</label>
+        <input type="email" id="participantEmail" />
+
+        <label>Event</label>
+        <select id="participantEvent" required></select>
+
+        <label>Table Number</label>
+        <input type="text" id="participantTableNumber" placeholder="Contoh: Table 8" />
+
+        <label>Meal Notes</label>
+        <input type="text" id="participantMealNotes" placeholder="Contoh: No seafood" />
+
+        <label>Status</label>
+        <select id="participantStatus">
+          <option value="Pending">Pending</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Verified">Verified</option>
+          <option value="Finalized">Finalized</option>
+          <option value="Not Attend">Not Attend</option>
+        </select>
+
+        <button type="submit">Save Participant</button>
+      </form>
+    </div>
   </div>
+
+  <div class="toast" id="toast">Saved!</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script>
-<script src="script.js"></script>
-
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
