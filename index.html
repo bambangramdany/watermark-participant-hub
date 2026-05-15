@@ -9,6 +9,7 @@
 <body>
   <aside class="sidebar">
     <h2>Watermark<br><span>Participant Hub</span></h2>
+
     <nav>
       <a class="active">Dashboard</a>
       <a>Events</a>
@@ -25,9 +26,12 @@
         <h1>Dashboard</h1>
         <p>Event registration & participant management system</p>
       </div>
+
       <div class="button-group">
         <button id="openEventForm">+ New Event</button>
-        <button id="openParticipantForm" class="secondary-btn">+ New Participant</button>
+        <button id="openParticipantForm" class="secondary-btn">
+          + New Participant
+        </button>
       </div>
     </header>
 
@@ -36,14 +40,17 @@
         <p>Total Events</p>
         <h2 id="totalEvents">0</h2>
       </div>
+
       <div class="card">
         <p>Total Participants</p>
         <h2 id="totalParticipants">0</h2>
       </div>
+
       <div class="card">
         <p>Submitted / Confirmed</p>
         <h2 id="confirmedParticipants">0</h2>
       </div>
+
       <div class="card">
         <p>Pending</p>
         <h2 id="pendingParticipants">0</h2>
@@ -53,6 +60,7 @@
     <section class="content-grid">
       <div class="panel">
         <h3>Event List</h3>
+
         <table>
           <thead>
             <tr>
@@ -63,12 +71,14 @@
               <th>Action</th>
             </tr>
           </thead>
+
           <tbody id="eventTable"></tbody>
         </table>
       </div>
 
       <div class="panel">
         <h3>Recent Participant Status</h3>
+
         <div id="participantList"></div>
       </div>
     </section>
@@ -77,8 +87,35 @@
       <div class="section-header">
         <div>
           <h3>Participant Database</h3>
-          <p>Review data peserta, confirmation status, dan admin verification.</p>
+          <p>
+            Review participant confirmation, verification, filtering, dan export.
+          </p>
         </div>
+
+        <button id="exportCsvBtn">
+          Export CSV
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search participant..."
+        />
+
+        <select id="statusFilter">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Verified">Verified</option>
+          <option value="Finalized">Finalized</option>
+          <option value="Not Attend">Not Attend</option>
+        </select>
+
+        <select id="eventFilter">
+          <option value="">All Events</option>
+        </select>
       </div>
 
       <table>
@@ -94,6 +131,7 @@
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody id="participantTable"></tbody>
       </table>
     </section>
@@ -103,6 +141,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Add New Event</h2>
+
         <button class="close-btn" id="closeEventForm">×</button>
       </div>
 
@@ -117,6 +156,7 @@
         <input type="text" id="eventVenue" required />
 
         <label>Status</label>
+
         <select id="eventStatus">
           <option value="Draft">Draft</option>
           <option value="Active">Active</option>
@@ -131,6 +171,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Add New Participant</h2>
+
         <button class="close-btn" id="closeParticipantForm">×</button>
       </div>
 
@@ -151,6 +192,7 @@
         <select id="participantEvent" required></select>
 
         <label>Status</label>
+
         <select id="participantStatus">
           <option value="Pending">Pending</option>
           <option value="Confirmed">Confirmed</option>
@@ -165,6 +207,7 @@
     <div class="modal-content large-modal">
       <div class="modal-header">
         <h2>Participant Detail</h2>
+
         <button class="close-btn" id="closeDetailModal">×</button>
       </div>
 
@@ -172,6 +215,7 @@
 
       <div class="verification-box">
         <label>Admin Verification Status</label>
+
         <select id="adminStatus">
           <option value="Pending">Pending</option>
           <option value="Submitted">Submitted</option>
@@ -182,9 +226,15 @@
         </select>
 
         <label>Admin Notes</label>
-        <textarea id="adminNotes" placeholder="Catatan internal panitia, misalnya perlu follow up data KTP, request hotel belum jelas, dll."></textarea>
 
-        <button id="saveVerificationBtn">Save Verification</button>
+        <textarea
+          id="adminNotes"
+          placeholder="Catatan internal panitia"
+        ></textarea>
+
+        <button id="saveVerificationBtn">
+          Save Verification
+        </button>
       </div>
     </div>
   </div>
