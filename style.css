@@ -79,7 +79,8 @@ body {
   flex-wrap: wrap;
 }
 
-button {
+button,
+.btn-link {
   background: #0284c7;
   color: white;
   border: none;
@@ -87,9 +88,13 @@ button {
   border-radius: 10px;
   cursor: pointer;
   font-weight: bold;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
 }
 
-button:hover {
+button:hover,
+.btn-link:hover {
   background: #0369a1;
 }
 
@@ -105,6 +110,15 @@ button:hover {
   padding: 7px 10px;
   font-size: 12px;
   border-radius: 8px;
+  margin: 2px;
+}
+
+.copy-btn {
+  background: #475569;
+}
+
+.copy-btn:hover {
+  background: #334155;
 }
 
 .danger {
@@ -177,7 +191,7 @@ button:hover {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 960px;
 }
 
 th,
@@ -211,6 +225,11 @@ th {
 .badge.pending {
   background: #fef3c7;
   color: #92400e;
+}
+
+.badge.submitted {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .participant-item {
@@ -286,18 +305,109 @@ form label {
 }
 
 form input,
-form select {
+form select,
+form textarea {
   padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   font-size: 14px;
   margin-bottom: 8px;
+  font-family: Arial, sans-serif;
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
 }
 
 .empty-state {
   color: #64748b;
   font-size: 14px;
   padding: 12px 0;
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: #0f172a;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: 0.25s ease;
+  z-index: 999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.confirmation-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: block;
+}
+
+.confirmation-wrapper {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 36px 18px;
+}
+
+.confirmation-card {
+  background: white;
+  border-radius: 22px;
+  padding: 30px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+}
+
+.confirmation-card h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.confirmation-card .subtitle {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.guest-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 18px;
+  border-radius: 16px;
+  margin-bottom: 22px;
+}
+
+.guest-box p {
+  margin-bottom: 6px;
+  color: #475569;
+}
+
+.guest-box strong {
+  color: #0f172a;
+}
+
+.success-box {
+  background: #dcfce7;
+  color: #166534;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  display: none;
+}
+
+.error-box {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  display: none;
 }
 
 @media (max-width: 900px) {
