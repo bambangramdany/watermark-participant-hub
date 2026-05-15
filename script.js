@@ -82,6 +82,10 @@ function saveConfirmations() {
   localStorage.setItem("wph_confirmations", JSON.stringify(confirmations));
 }
 
+function saveCheckins() {
+  localStorage.setItem("wph_checkins", JSON.stringify(checkins));
+}
+
 function getEventName(eventId) {
   const event = events.find(item => item.id === eventId);
   return event ? event.name : "No Event";
@@ -136,17 +140,42 @@ function copyCheckinLink(participantId) {
 }
 
 function renderDashboard() {
-  document.getElementById("totalEvents").textContent = events.length;
-  document.getElementById("totalParticipants").textContent = participants.length;
+  const total = participants.length;
+  const arrived = participants.filter(p => getCheckinByParticipantId(p.id)).length;
+  const notArrived = total - arrived;
+  const rate = total > 0 ? Math.round((arrived / total) * 100) : 0;
 
-  const confirmed = participants.filter(p =>
-    ["Submitted", "Verified", "Finalized"].includes(p.status)
-  ).length;
+  document.getElementById("totalParticipants").textContent = total;
+  document.getElementById("arrivedParticipants").textContent = arrived;
+  document.getElementById("notArrivedParticipants").textContent = notArrived;
+  document.getElementById("arrivalRate").textContent = `${rate}%`;
+}
 
-  const pending = participants.filter(p => p.status === "Pending").length;
+function renderNoShowList() {
+  const list = document.getElementById("noShowList");
+  list.innerHTML = "";
 
-  document.getElementById("confirmedParticipants").textContent = confirmed;
-  document.getElementById("pendingParticipants").textContent = pending;
+  const notArrivedParticipants = participants.filter(p => !getCheckinByParticipantId(p.id));
+
+  if (notArrivedParticipants.length === 0) {
+    list.innerHTML = `<p class="empty-state">All participants have arrived. Mantap, panitia bisa napas sedikit.</p>`;
+    return;
+  }
+
+  notArrivedParticipants.slice(0, 8).forEach(participant => {
+    const item = document.createElement("div");
+    item.className = "participant-item";
+
+    item.innerHTML = `
+      <div>
+        <p>${participant.name}</p>
+        <span>${participant.company}</span>
+      </div>
+      <span class="badge pending">Not Arrived</span>
+    `;
+
+    list.appendChild(item);
+  });
 }
 
 function renderEventFilterOptions() {
@@ -194,28 +223,6 @@ function renderEvents() {
     `;
 
     table.appendChild(row);
-  });
-}
-
-function renderParticipantStatusList() {
-  const list = document.getElementById("participantList");
-  list.innerHTML = "";
-
-  participants.slice(-5).reverse().forEach(participant => {
-    const item = document.createElement("div");
-    item.className = "participant-item";
-
-    item.innerHTML = `
-      <div>
-        <p>${participant.name}</p>
-        <span>${participant.company}</span>
-      </div>
-      <span class="badge ${getStatusClass(participant.status)}">
-        ${participant.status}
-      </span>
-    `;
-
-    list.appendChild(item);
   });
 }
 
@@ -388,7 +395,7 @@ function deleteParticipant(participantId) {
 
   saveParticipants();
   saveConfirmations();
-  localStorage.setItem("wph_checkins", JSON.stringify(checkins));
+  saveCheckins();
 
   refreshApp();
 }
@@ -430,7 +437,7 @@ function exportParticipantsCsv() {
 
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "watermark-participants-checkin.csv";
+  link.download = "watermark-participants-arrival-report.csv";
   link.click();
 
   showToast("CSV exported!");
@@ -514,7 +521,7 @@ function refreshApp() {
   renderEventOptions();
   renderEventFilterOptions();
   renderEvents();
-  renderParticipantStatusList();
+  renderNoShowList();
   renderParticipantTable();
 }
 
