@@ -1,7 +1,3 @@
-// ==============================
-// DEFAULT DATA
-// ==============================
-
 const defaultEvents = [
   {
     id: "event-001",
@@ -28,6 +24,7 @@ const defaultParticipants = [
     whatsapp: "081234567890",
     email: "bambang@example.com",
     status: "Verified",
+    arrivalStatus: "Not Arrived",
     adminNotes: ""
   },
   {
@@ -38,29 +35,17 @@ const defaultParticipants = [
     whatsapp: "081298765432",
     email: "andi@example.com",
     status: "Pending",
+    arrivalStatus: "Not Arrived",
     adminNotes: ""
   }
 ];
 
-// ==============================
-// STORAGE
-// ==============================
-
-let events =
-  JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
-
-let participants =
-  JSON.parse(localStorage.getItem("wph_participants")) ||
-  defaultParticipants;
-
-let confirmations =
-  JSON.parse(localStorage.getItem("wph_confirmations")) || [];
+let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
+let participants = JSON.parse(localStorage.getItem("wph_participants")) || defaultParticipants;
+let confirmations = JSON.parse(localStorage.getItem("wph_confirmations")) || [];
+let checkins = JSON.parse(localStorage.getItem("wph_checkins")) || [];
 
 let selectedParticipantId = null;
-
-// ==============================
-// ELEMENTS
-// ==============================
 
 const eventModal = document.getElementById("eventModal");
 const participantModal = document.getElementById("participantModal");
@@ -68,32 +53,18 @@ const detailModal = document.getElementById("detailModal");
 
 const openEventForm = document.getElementById("openEventForm");
 const closeEventForm = document.getElementById("closeEventForm");
-
-const openParticipantForm =
-  document.getElementById("openParticipantForm");
-
-const closeParticipantForm =
-  document.getElementById("closeParticipantForm");
-
-const closeDetailModal =
-  document.getElementById("closeDetailModal");
+const openParticipantForm = document.getElementById("openParticipantForm");
+const closeParticipantForm = document.getElementById("closeParticipantForm");
+const closeDetailModal = document.getElementById("closeDetailModal");
 
 const eventForm = document.getElementById("eventForm");
-const participantForm =
-  document.getElementById("participantForm");
-
-const saveVerificationBtn =
-  document.getElementById("saveVerificationBtn");
+const participantForm = document.getElementById("participantForm");
+const saveVerificationBtn = document.getElementById("saveVerificationBtn");
 
 const searchInput = document.getElementById("searchInput");
 const statusFilter = document.getElementById("statusFilter");
 const eventFilter = document.getElementById("eventFilter");
-
 const exportCsvBtn = document.getElementById("exportCsvBtn");
-
-// ==============================
-// HELPERS
-// ==============================
 
 function generateId(prefix) {
   return `${prefix}-${Date.now()}`;
@@ -104,21 +75,15 @@ function saveEvents() {
 }
 
 function saveParticipants() {
-  localStorage.setItem(
-    "wph_participants",
-    JSON.stringify(participants)
-  );
+  localStorage.setItem("wph_participants", JSON.stringify(participants));
 }
 
 function saveConfirmations() {
-  localStorage.setItem(
-    "wph_confirmations",
-    JSON.stringify(confirmations)
-  );
+  localStorage.setItem("wph_confirmations", JSON.stringify(confirmations));
 }
 
 function getEventName(eventId) {
-  const event = events.find((item) => item.id === eventId);
+  const event = events.find(item => item.id === eventId);
   return event ? event.name : "No Event";
 }
 
@@ -127,28 +92,31 @@ function getStatusClass(status) {
 }
 
 function getParticipantById(participantId) {
-  return participants.find(
-    (item) => item.id === participantId
-  );
+  return participants.find(item => item.id === participantId);
 }
 
 function getConfirmationByParticipantId(participantId) {
-  return confirmations.find(
-    (item) => item.participantId === participantId
-  );
+  return confirmations.find(item => item.participantId === participantId);
+}
+
+function getCheckinByParticipantId(participantId) {
+  return checkins.find(item => item.participantId === participantId);
+}
+
+function getBaseUrl() {
+  return window.location.origin + window.location.pathname.replace("index.html", "");
 }
 
 function getConfirmationUrl(participantId) {
-  const baseUrl =
-    window.location.origin +
-    window.location.pathname.replace("index.html", "");
+  return `${getBaseUrl()}confirmation.html?id=${participantId}`;
+}
 
-  return `${baseUrl}confirmation.html?id=${participantId}`;
+function getCheckinUrl(participantId) {
+  return `${getBaseUrl()}checkin.html?id=${participantId}`;
 }
 
 function showToast(message) {
   const toast = document.getElementById("toast");
-
   toast.textContent = message;
   toast.classList.add("show");
 
@@ -157,79 +125,55 @@ function showToast(message) {
   }, 1800);
 }
 
-// ==============================
-// DASHBOARD
-// ==============================
+function copyConfirmationLink(participantId) {
+  navigator.clipboard.writeText(getConfirmationUrl(participantId));
+  showToast("Confirmation link copied!");
+}
+
+function copyCheckinLink(participantId) {
+  navigator.clipboard.writeText(getCheckinUrl(participantId));
+  showToast("Check-in link copied!");
+}
 
 function renderDashboard() {
-  document.getElementById("totalEvents").textContent =
-    events.length;
+  document.getElementById("totalEvents").textContent = events.length;
+  document.getElementById("totalParticipants").textContent = participants.length;
 
-  document.getElementById("totalParticipants").textContent =
-    participants.length;
-
-  const confirmed = participants.filter((p) =>
+  const confirmed = participants.filter(p =>
     ["Submitted", "Verified", "Finalized"].includes(p.status)
   ).length;
 
-  const pending = participants.filter(
-    (p) => p.status === "Pending"
-  ).length;
+  const pending = participants.filter(p => p.status === "Pending").length;
 
-  document.getElementById(
-    "confirmedParticipants"
-  ).textContent = confirmed;
-
-  document.getElementById(
-    "pendingParticipants"
-  ).textContent = pending;
+  document.getElementById("confirmedParticipants").textContent = confirmed;
+  document.getElementById("pendingParticipants").textContent = pending;
 }
 
-// ==============================
-// FILTERS
-// ==============================
-
 function renderEventFilterOptions() {
-  eventFilter.innerHTML =
-    `<option value="">All Events</option>`;
+  eventFilter.innerHTML = `<option value="">All Events</option>`;
 
-  events.forEach((event) => {
+  events.forEach(event => {
     const option = document.createElement("option");
-
     option.value = event.id;
     option.textContent = event.name;
-
     eventFilter.appendChild(option);
   });
 }
 
-// ==============================
-// EVENT OPTIONS
-// ==============================
-
 function renderEventOptions() {
-  const select =
-    document.getElementById("participantEvent");
-
+  const select = document.getElementById("participantEvent");
   select.innerHTML = "";
 
-  events.forEach((event) => {
+  events.forEach(event => {
     const option = document.createElement("option");
-
     option.value = event.id;
     option.textContent = event.name;
-
     select.appendChild(option);
   });
 }
 
-// ==============================
-// EVENT TABLE
-// ==============================
-
 function renderEvents() {
   const table = document.getElementById("eventTable");
-
   table.innerHTML = "";
 
   events.forEach((event, index) => {
@@ -240,22 +184,12 @@ function renderEvents() {
       <td>${event.date}</td>
       <td>${event.venue}</td>
       <td>
-        <span class="badge ${
-          event.status === "Active"
-            ? "active"
-            : "draft"
-        }">
+        <span class="badge ${event.status === "Active" ? "active" : "draft"}">
           ${event.status}
         </span>
       </td>
-
       <td>
-        <button
-          class="small-btn danger"
-          onclick="deleteEvent(${index})"
-        >
-          Delete
-        </button>
+        <button class="small-btn danger" onclick="deleteEvent(${index})">Delete</button>
       </td>
     `;
 
@@ -263,378 +197,201 @@ function renderEvents() {
   });
 }
 
-// ==============================
-// RECENT PARTICIPANT
-// ==============================
-
 function renderParticipantStatusList() {
-  const list =
-    document.getElementById("participantList");
-
+  const list = document.getElementById("participantList");
   list.innerHTML = "";
 
-  participants
-    .slice(-5)
-    .reverse()
-    .forEach((participant) => {
-      const item = document.createElement("div");
+  participants.slice(-5).reverse().forEach(participant => {
+    const item = document.createElement("div");
+    item.className = "participant-item";
 
-      item.className = "participant-item";
+    item.innerHTML = `
+      <div>
+        <p>${participant.name}</p>
+        <span>${participant.company}</span>
+      </div>
+      <span class="badge ${getStatusClass(participant.status)}">
+        ${participant.status}
+      </span>
+    `;
 
-      item.innerHTML = `
-        <div>
-          <p>${participant.name}</p>
-          <span>${participant.company}</span>
-        </div>
-
-        <span class="badge ${getStatusClass(
-          participant.status
-        )}">
-          ${participant.status}
-        </span>
-      `;
-
-      list.appendChild(item);
-    });
+    list.appendChild(item);
+  });
 }
 
-// ==============================
-// PARTICIPANT TABLE
-// ==============================
-
 function renderParticipantTable() {
-  const table =
-    document.getElementById("participantTable");
-
+  const table = document.getElementById("participantTable");
   table.innerHTML = "";
 
-  const searchValue =
-    searchInput.value.toLowerCase();
+  const searchValue = searchInput.value.toLowerCase();
+  const selectedStatus = statusFilter.value;
+  const selectedEvent = eventFilter.value;
 
-  const selectedStatus =
-    statusFilter.value;
+  const filteredParticipants = participants.filter(participant => {
+    const matchSearch =
+      participant.name.toLowerCase().includes(searchValue) ||
+      participant.company.toLowerCase().includes(searchValue);
 
-  const selectedEvent =
-    eventFilter.value;
+    const matchStatus = !selectedStatus || participant.status === selectedStatus;
+    const matchEvent = !selectedEvent || participant.eventId === selectedEvent;
 
-  const filteredParticipants =
-    participants.filter((participant) => {
-      const matchSearch =
-        participant.name
-          .toLowerCase()
-          .includes(searchValue) ||
-        participant.company
-          .toLowerCase()
-          .includes(searchValue);
-
-      const matchStatus =
-        !selectedStatus ||
-        participant.status === selectedStatus;
-
-      const matchEvent =
-        !selectedEvent ||
-        participant.eventId === selectedEvent;
-
-      return (
-        matchSearch &&
-        matchStatus &&
-        matchEvent
-      );
-    });
+    return matchSearch && matchStatus && matchEvent;
+  });
 
   if (filteredParticipants.length === 0) {
     table.innerHTML = `
       <tr>
-        <td colspan="8" class="empty-state">
-          No participant found.
-        </td>
+        <td colspan="8" class="empty-state">No participant found.</td>
       </tr>
     `;
-
     return;
   }
 
-  filteredParticipants.forEach(
-    (participant, index) => {
-      const confirmation =
-        getConfirmationByParticipantId(
-          participant.id
-        );
+  filteredParticipants.forEach(participant => {
+    const confirmation = getConfirmationByParticipantId(participant.id);
+    const checkin = getCheckinByParticipantId(participant.id);
 
-      const confirmationStatus =
-        confirmation
-          ? "Submitted"
-          : "Not Submitted";
+    const confirmationStatus = confirmation ? "Submitted" : "Not Submitted";
+    const arrivalStatus = checkin ? "Arrived" : "Not Arrived";
 
-      const row =
-        document.createElement("tr");
+    const row = document.createElement("tr");
 
-      row.innerHTML = `
-        <td>${participant.name}</td>
-
-        <td>${participant.company}</td>
-
-        <td>${getEventName(
-          participant.eventId
-        )}</td>
-
-        <td>${participant.whatsapp}</td>
-
-        <td>${participant.email}</td>
-
-        <td>
-          <span class="badge ${getStatusClass(
-            participant.status
-          )}">
-            ${participant.status}
+    row.innerHTML = `
+      <td>${participant.name}</td>
+      <td>${participant.company}</td>
+      <td>${getEventName(participant.eventId)}</td>
+      <td>${participant.whatsapp}</td>
+      <td>${participant.email}</td>
+      <td>
+        <span class="badge ${getStatusClass(participant.status)}">
+          ${participant.status}
+        </span>
+        <br><br>
+        <span class="badge ${checkin ? "verified" : "pending"}">
+          ${arrivalStatus}
+        </span>
+      </td>
+      <td>
+        <div style="margin-bottom:6px;">
+          <span class="badge ${confirmation ? "submitted" : "pending"}">
+            ${confirmationStatus}
           </span>
-        </td>
+        </div>
 
-        <td>
-          <div style="margin-bottom:6px;">
-            <span class="badge ${
-              confirmation
-                ? "submitted"
-                : "pending"
-            }">
-              ${confirmationStatus}
-            </span>
-          </div>
+        <a class="btn-link small-btn" href="${getConfirmationUrl(participant.id)}" target="_blank">Confirm</a>
+        <button class="small-btn copy-btn" onclick="copyConfirmationLink('${participant.id}')">Copy Confirm</button>
 
-          <a
-            class="btn-link small-btn"
-            href="${getConfirmationUrl(
-              participant.id
-            )}"
-            target="_blank"
-          >
-            Open
-          </a>
+        <br>
 
-          <button
-            class="small-btn copy-btn"
-            onclick="copyConfirmationLink('${
-              participant.id
-            }')"
-          >
-            Copy Link
-          </button>
-        </td>
+        <a class="btn-link small-btn detail-btn" href="${getCheckinUrl(participant.id)}" target="_blank">Check-in</a>
+        <button class="small-btn copy-btn" onclick="copyCheckinLink('${participant.id}')">Copy Check-in</button>
+      </td>
+      <td>
+        <button class="small-btn detail-btn" onclick="openParticipantDetail('${participant.id}')">Detail</button>
+        <button class="small-btn danger" onclick="deleteParticipant('${participant.id}')">Delete</button>
+      </td>
+    `;
 
-        <td>
-          <button
-            class="small-btn detail-btn"
-            onclick="openParticipantDetail('${
-              participant.id
-            }')"
-          >
-            Detail
-          </button>
-
-          <button
-            class="small-btn danger"
-            onclick="deleteParticipant(${index})"
-          >
-            Delete
-          </button>
-        </td>
-      `;
-
-      table.appendChild(row);
-    }
-  );
+    table.appendChild(row);
+  });
 }
 
-// ==============================
-// DETAIL
-// ==============================
-
 function openParticipantDetail(participantId) {
-  const participant =
-    getParticipantById(participantId);
+  const participant = getParticipantById(participantId);
+  const confirmation = getConfirmationByParticipantId(participantId);
+  const checkin = getCheckinByParticipantId(participantId);
+  const detailContent = document.getElementById("detailContent");
 
-  const confirmation =
-    getConfirmationByParticipantId(
-      participantId
-    );
-
-  const detailContent =
-    document.getElementById("detailContent");
-
-  selectedParticipantId =
-    participantId;
+  selectedParticipantId = participantId;
 
   detailContent.innerHTML = `
     <div class="detail-grid">
-
       <div class="detail-card">
         <h4>Participant Profile</h4>
-
-        <p><strong>Name:</strong>
-        ${participant.name}</p>
-
-        <p><strong>Company:</strong>
-        ${participant.company}</p>
-
-        <p><strong>Event:</strong>
-        ${getEventName(participant.eventId)}</p>
-
-        <p><strong>WhatsApp:</strong>
-        ${participant.whatsapp}</p>
-
-        <p><strong>Email:</strong>
-        ${participant.email}</p>
-
-        <p>
-          <strong>Status:</strong>
-
-          <span class="badge ${getStatusClass(
-            participant.status
-          )}">
-            ${participant.status}
-          </span>
-        </p>
+        <p><strong>Name:</strong> ${participant.name}</p>
+        <p><strong>Company:</strong> ${participant.company}</p>
+        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
+        <p><strong>WhatsApp:</strong> ${participant.whatsapp}</p>
+        <p><strong>Email:</strong> ${participant.email}</p>
+        <p><strong>Status:</strong> <span class="badge ${getStatusClass(participant.status)}">${participant.status}</span></p>
+        <p><strong>Arrival:</strong> ${checkin ? "Arrived" : "Not Arrived"}</p>
+        ${checkin ? `<p><strong>Checked-in At:</strong> ${new Date(checkin.checkedInAt).toLocaleString("id-ID")}</p>` : ""}
       </div>
 
       <div class="detail-card">
         <h4>Confirmation Data</h4>
-
         ${
           confirmation
             ? `
-              <p><strong>Attendance:</strong>
-              ${confirmation.attendance}</p>
-
-              <p><strong>Hotel:</strong>
-              ${confirmation.hotelNeeded}</p>
-
-              <p><strong>Transport:</strong>
-              ${confirmation.transportNeeded}</p>
-
-              <p><strong>Food Restriction:</strong>
-              ${
-                confirmation.foodRestriction ||
-                "-"
-              }</p>
-
-              <p><strong>Notes:</strong>
-              ${confirmation.notes || "-"}</p>
+              <p><strong>Attendance:</strong> ${confirmation.attendance}</p>
+              <p><strong>Hotel:</strong> ${confirmation.hotelNeeded}</p>
+              <p><strong>Transport:</strong> ${confirmation.transportNeeded}</p>
+              <p><strong>Food Restriction:</strong> ${confirmation.foodRestriction || "-"}</p>
+              <p><strong>Notes:</strong> ${confirmation.notes || "-"}</p>
             `
-            : `
-              <p class="empty-state">
-                No confirmation yet.
-              </p>
-            `
+            : `<p class="empty-state">No confirmation yet.</p>`
         }
       </div>
     </div>
   `;
 
-  document.getElementById(
-    "adminStatus"
-  ).value = participant.status;
-
-  document.getElementById(
-    "adminNotes"
-  ).value =
-    participant.adminNotes || "";
+  document.getElementById("adminStatus").value = participant.status;
+  document.getElementById("adminNotes").value = participant.adminNotes || "";
 
   detailModal.classList.add("show");
 }
 
-// ==============================
-// SAVE VERIFICATION
-// ==============================
-
 function saveVerification() {
-  const status =
-    document.getElementById(
-      "adminStatus"
-    ).value;
+  const status = document.getElementById("adminStatus").value;
+  const notes = document.getElementById("adminNotes").value;
 
-  const notes =
-    document.getElementById(
-      "adminNotes"
-    ).value;
+  participants = participants.map(participant => {
+    if (participant.id === selectedParticipantId) {
+      return {
+        ...participant,
+        status,
+        adminNotes: notes
+      };
+    }
 
-  participants =
-    participants.map((participant) => {
-      if (
-        participant.id ===
-        selectedParticipantId
-      ) {
-        return {
-          ...participant,
-          status,
-          adminNotes: notes
-        };
-      }
-
-      return participant;
-    });
+    return participant;
+  });
 
   saveParticipants();
-
   detailModal.classList.remove("show");
-
   refreshApp();
 
   showToast("Verification updated!");
 }
 
-// ==============================
-// COPY LINK
-// ==============================
-
-function copyConfirmationLink(
-  participantId
-) {
-  navigator.clipboard.writeText(
-    getConfirmationUrl(participantId)
-  );
-
-  showToast("Confirmation link copied!");
-}
-
-// ==============================
-// DELETE
-// ==============================
-
 function deleteEvent(index) {
   const selectedEvent = events[index];
-
-  const linkedParticipants =
-    participants.filter(
-      (p) =>
-        p.eventId === selectedEvent.id
-    );
+  const linkedParticipants = participants.filter(p => p.eventId === selectedEvent.id);
 
   if (linkedParticipants.length > 0) {
-    alert(
-      "This event still has participants."
-    );
-
+    alert("This event still has participants.");
     return;
   }
 
   events.splice(index, 1);
-
   saveEvents();
-
   refreshApp();
 }
 
-function deleteParticipant(index) {
-  participants.splice(index, 1);
+function deleteParticipant(participantId) {
+  const confirmDelete = confirm("Are you sure you want to delete this participant?");
+  if (!confirmDelete) return;
+
+  participants = participants.filter(item => item.id !== participantId);
+  confirmations = confirmations.filter(item => item.participantId !== participantId);
+  checkins = checkins.filter(item => item.participantId !== participantId);
 
   saveParticipants();
+  saveConfirmations();
+  localStorage.setItem("wph_checkins", JSON.stringify(checkins));
 
   refreshApp();
 }
-
-// ==============================
-// EXPORT CSV
-// ==============================
 
 function exportParticipantsCsv() {
   const rows = [
@@ -644,210 +401,115 @@ function exportParticipantsCsv() {
       "Event",
       "WhatsApp",
       "Email",
-      "Status"
+      "Status",
+      "Arrival Status",
+      "Checked-in At"
     ]
   ];
 
-  participants.forEach((participant) => {
+  participants.forEach(participant => {
+    const checkin = getCheckinByParticipantId(participant.id);
+
     rows.push([
       participant.name,
       participant.company,
       getEventName(participant.eventId),
       participant.whatsapp,
       participant.email,
-      participant.status
+      participant.status,
+      checkin ? "Arrived" : "Not Arrived",
+      checkin ? new Date(checkin.checkedInAt).toLocaleString("id-ID") : ""
     ]);
   });
 
-  const csvContent = rows
-    .map((e) => e.join(","))
-    .join("\n");
+  const csvContent = rows.map(row => row.join(",")).join("\n");
 
   const blob = new Blob([csvContent], {
     type: "text/csv;charset=utf-8;"
   });
 
-  const link =
-    document.createElement("a");
-
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-
-  link.download =
-    "watermark-participants.csv";
-
+  link.download = "watermark-participants-checkin.csv";
   link.click();
 
   showToast("CSV exported!");
 }
 
-// ==============================
-// EVENTS
-// ==============================
+openEventForm.addEventListener("click", () => {
+  eventModal.classList.add("show");
+});
 
-openEventForm.addEventListener(
-  "click",
-  () => {
-    eventModal.classList.add("show");
-  }
-);
+closeEventForm.addEventListener("click", () => {
+  eventModal.classList.remove("show");
+});
 
-closeEventForm.addEventListener(
-  "click",
-  () => {
-    eventModal.classList.remove("show");
-  }
-);
+openParticipantForm.addEventListener("click", () => {
+  renderEventOptions();
+  participantModal.classList.add("show");
+});
 
-openParticipantForm.addEventListener(
-  "click",
-  () => {
-    renderEventOptions();
+closeParticipantForm.addEventListener("click", () => {
+  participantModal.classList.remove("show");
+});
 
-    participantModal.classList.add(
-      "show"
-    );
-  }
-);
+closeDetailModal.addEventListener("click", () => {
+  detailModal.classList.remove("show");
+});
 
-closeParticipantForm.addEventListener(
-  "click",
-  () => {
-    participantModal.classList.remove(
-      "show"
-    );
-  }
-);
+saveVerificationBtn.addEventListener("click", saveVerification);
 
-closeDetailModal.addEventListener(
-  "click",
-  () => {
-    detailModal.classList.remove(
-      "show"
-    );
-  }
-);
+eventForm.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-saveVerificationBtn.addEventListener(
-  "click",
-  saveVerification
-);
+  const newEvent = {
+    id: generateId("event"),
+    name: document.getElementById("eventName").value,
+    date: document.getElementById("eventDate").value,
+    venue: document.getElementById("eventVenue").value,
+    status: document.getElementById("eventStatus").value
+  };
 
-eventForm.addEventListener(
-  "submit",
-  function (e) {
-    e.preventDefault();
+  events.push(newEvent);
+  saveEvents();
 
-    const newEvent = {
-      id: generateId("event"),
-      name:
-        document.getElementById(
-          "eventName"
-        ).value,
-      date:
-        document.getElementById(
-          "eventDate"
-        ).value,
-      venue:
-        document.getElementById(
-          "eventVenue"
-        ).value,
-      status:
-        document.getElementById(
-          "eventStatus"
-        ).value
-    };
+  eventForm.reset();
+  eventModal.classList.remove("show");
+  refreshApp();
+});
 
-    events.push(newEvent);
+participantForm.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-    saveEvents();
+  const newParticipant = {
+    id: generateId("participant"),
+    eventId: document.getElementById("participantEvent").value,
+    name: document.getElementById("participantName").value,
+    company: document.getElementById("participantCompany").value,
+    whatsapp: document.getElementById("participantWhatsapp").value,
+    email: document.getElementById("participantEmail").value,
+    status: document.getElementById("participantStatus").value,
+    arrivalStatus: "Not Arrived",
+    adminNotes: ""
+  };
 
-    eventForm.reset();
+  participants.push(newParticipant);
+  saveParticipants();
 
-    eventModal.classList.remove(
-      "show"
-    );
+  participantForm.reset();
+  participantModal.classList.remove("show");
 
-    refreshApp();
-  }
-);
+  refreshApp();
+});
 
-participantForm.addEventListener(
-  "submit",
-  function (e) {
-    e.preventDefault();
-
-    const newParticipant = {
-      id: generateId("participant"),
-      eventId:
-        document.getElementById(
-          "participantEvent"
-        ).value,
-      name:
-        document.getElementById(
-          "participantName"
-        ).value,
-      company:
-        document.getElementById(
-          "participantCompany"
-        ).value,
-      whatsapp:
-        document.getElementById(
-          "participantWhatsapp"
-        ).value,
-      email:
-        document.getElementById(
-          "participantEmail"
-        ).value,
-      status:
-        document.getElementById(
-          "participantStatus"
-        ).value,
-      adminNotes: ""
-    };
-
-    participants.push(newParticipant);
-
-    saveParticipants();
-
-    participantForm.reset();
-
-    participantModal.classList.remove(
-      "show"
-    );
-
-    refreshApp();
-  }
-);
-
-// ==============================
-// FILTER EVENTS
-// ==============================
-
-searchInput.addEventListener(
-  "input",
-  renderParticipantTable
-);
-
-statusFilter.addEventListener(
-  "change",
-  renderParticipantTable
-);
-
-eventFilter.addEventListener(
-  "change",
-  renderParticipantTable
-);
-
-exportCsvBtn.addEventListener(
-  "click",
-  exportParticipantsCsv
-);
-
-// ==============================
-// REFRESH
-// ==============================
+searchInput.addEventListener("input", renderParticipantTable);
+statusFilter.addEventListener("change", renderParticipantTable);
+eventFilter.addEventListener("change", renderParticipantTable);
+exportCsvBtn.addEventListener("click", exportParticipantsCsv);
 
 function refreshApp() {
+  checkins = JSON.parse(localStorage.getItem("wph_checkins")) || [];
+
   renderDashboard();
   renderEventOptions();
   renderEventFilterOptions();
