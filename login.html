@@ -1,1 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Watermark Participant Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="confirmation-page">
+  <div class="confirmation-wrapper">
+    <div class="confirmation-card">
+      <h1>Watermark Participant Hub</h1>
 
+      <p class="subtitle">
+        Event Registration Management System
+      </p>
+
+      <form id="loginForm">
+        <label>Email</label>
+        <input type="email" id="email" required />
+
+        <label>Password</label>
+        <input type="password" id="password" required />
+
+        <button type="submit">
+          Login
+        </button>
+      </form>
+
+      <div class="guest-box" style="margin-top:20px;">
+        <strong>Demo Account</strong>
+
+        <br><br>
+
+        Super Admin:
+        <br>
+        superadmin@watermark.id
+
+        <br><br>
+
+        Registration:
+        <br>
+        registration@watermark.id
+
+        <br><br>
+
+        Viewer:
+        <br>
+        viewer@watermark.id
+
+        <br><br>
+
+        Password:
+        <br>
+        123456
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const users = [
+      {
+        email: "superadmin@watermark.id",
+        password: "123456",
+        role: "Super Admin"
+      },
+      {
+        email: "registration@watermark.id",
+        password: "123456",
+        role: "Registration"
+      },
+      {
+        email: "viewer@watermark.id",
+        password: "123456",
+        role: "Viewer"
+      }
+    ];
+
+    const loginForm =
+      document.getElementById("loginForm");
+
+    loginForm.addEventListener(
+      "submit",
+      function (e) {
+        e.preventDefault();
+
+        const email =
+          document.getElementById("email").value;
+
+        const password =
+          document.getElementById("password").value;
+
+        const user = users.find(
+          item =>
+            item.email === email &&
+            item.password === password
+        );
+
+        if (!user) {
+          alert("Invalid login");
+          return;
+        }
+
+        localStorage.setItem(
+          "wph_logged_user",
+          JSON.stringify(user)
+        );
+
+        window.location.href = "index.html";
+      }
+    );
+  </script>
+</body>
+</html>
