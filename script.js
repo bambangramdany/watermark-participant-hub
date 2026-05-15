@@ -23,7 +23,8 @@ const defaultParticipants = [
     company: "PT Sinematik Anak Bangsa",
     whatsapp: "081234567890",
     email: "bambang@example.com",
-    status: "Confirmed"
+    status: "Confirmed",
+    adminNotes: ""
   },
   {
     id: "participant-002",
@@ -32,7 +33,8 @@ const defaultParticipants = [
     company: "PT Contoh Sejahtera",
     whatsapp: "081298765432",
     email: "andi@example.com",
-    status: "Pending"
+    status: "Pending",
+    adminNotes: ""
   },
   {
     id: "participant-003",
@@ -41,7 +43,8 @@ const defaultParticipants = [
     company: "PT Maju Bersama",
     whatsapp: "081277788899",
     email: "sarah@example.com",
-    status: "Confirmed"
+    status: "Confirmed",
+    adminNotes: ""
   }
 ];
 
@@ -49,8 +52,11 @@ let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
 let participants = JSON.parse(localStorage.getItem("wph_participants")) || defaultParticipants;
 let confirmations = JSON.parse(localStorage.getItem("wph_confirmations")) || [];
 
+let selectedParticipantId = null;
+
 const eventModal = document.getElementById("eventModal");
 const participantModal = document.getElementById("participantModal");
+const detailModal = document.getElementById("detailModal");
 
 const openEventForm = document.getElementById("openEventForm");
 const closeEventForm = document.getElementById("closeEventForm");
@@ -59,6 +65,9 @@ const eventForm = document.getElementById("eventForm");
 const openParticipantForm = document.getElementById("openParticipantForm");
 const closeParticipantForm = document.getElementById("closeParticipantForm");
 const participantForm = document.getElementById("participantForm");
+
+const closeDetailModal = document.getElementById("closeDetailModal");
+const saveVerificationBtn = document.getElementById("saveVerificationBtn");
 
 function generateId(prefix) {
   return `${prefix}-${Date.now()}`;
@@ -82,11 +91,15 @@ function getEventName(eventId) {
 }
 
 function getStatusClass(status) {
-  return status.toLowerCase();
+  return status.toLowerCase().replaceAll(" ", "-");
 }
 
 function getConfirmationByParticipantId(participantId) {
   return confirmations.find(item => item.participantId === participantId);
+}
+
+function getParticipantById(participantId) {
+  return participants.find(item => item.id === participantId);
 }
 
 function getConfirmationUrl(participantId) {
@@ -114,7 +127,10 @@ function renderDashboard() {
   document.getElementById("totalEvents").textContent = events.length;
   document.getElementById("totalParticipants").textContent = participants.length;
 
-  const confirmed = participants.filter(p => p.status === "Confirmed" || p.status === "Submitted").length;
+  const confirmed = participants.filter(p =>
+    ["Confirmed", "Submitted", "Verified", "Finalized"].includes(p.status)
+  ).length;
+
   const pending = participants.filter(p => p.status === "Pending").length;
 
   document.getElementById("confirmedParticipants").textContent = confirmed;
@@ -240,12 +256,91 @@ function renderParticipantTable() {
         <button class="small-btn copy-btn" onclick="copyConfirmationLink('${participant.id}')">Copy Link</button>
       </td>
       <td>
+        <button class="small-btn detail-btn" onclick="openParticipantDetail('${participant.id}')">Detail</button>
         <button class="small-btn danger" onclick="deleteParticipant(${index})">Delete</button>
       </td>
     `;
 
     table.appendChild(row);
   });
+}
+
+function openParticipantDetail(participantId) {
+  const participant = getParticipantById(participantId);
+  const confirmation = getConfirmationByParticipantId(participantId);
+  const detailContent = document.getElementById("detailContent");
+
+  if (!participant) {
+    alert("Participant data not found.");
+    return;
+  }
+
+  selectedParticipantId = participantId;
+
+  detailContent.innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Participant Profile</h4>
+        <p><strong>Name:</strong> ${participant.name}</p>
+        <p><strong>Company:</strong> ${participant.company}</p>
+        <p><strong>Event:</strong> ${getEventName(participant.eventId)}</p>
+        <p><strong>WhatsApp:</strong> ${participant.whatsapp}</p>
+        <p><strong>Email:</strong> ${participant.email}</p>
+        <p><strong>Current Status:</strong> 
+          <span class="badge ${getStatusClass(participant.status)}">${participant.status}</span>
+        </p>
+      </div>
+
+      <div class="detail-card">
+        <h4>Confirmation Data</h4>
+        ${
+          confirmation
+            ? `
+              <p><strong>Attendance:</strong> ${confirmation.attendance}</p>
+              <p><strong>Hotel Needed:</strong> ${confirmation.hotelNeeded}</p>
+              <p><strong>Transport Needed:</strong> ${confirmation.transportNeeded}</p>
+              <p><strong>Food Restriction:</strong> ${confirmation.foodRestriction || "-"}</p>
+              <p><strong>Notes:</strong> ${confirmation.notes || "-"}</p>
+              <p><strong>Submitted At:</strong> ${new Date(confirmation.submittedAt).toLocaleString("id-ID")}</p>
+            `
+            : `
+              <p class="empty-state">Participant has not submitted confirmation yet.</p>
+            `
+        }
+      </div>
+    </div>
+  `;
+
+  document.getElementById("adminStatus").value = participant.status || "Pending";
+  document.getElementById("adminNotes").value = participant.adminNotes || "";
+
+  detailModal.classList.add("show");
+}
+
+function saveVerification() {
+  if (!selectedParticipantId) return;
+
+  const status = document.getElementById("adminStatus").value;
+  const notes = document.getElementById("adminNotes").value;
+
+  participants = participants.map(participant => {
+    if (participant.id === selectedParticipantId) {
+      return {
+        ...participant,
+        status,
+        adminNotes: notes
+      };
+    }
+
+    return participant;
+  });
+
+  saveParticipants();
+  detailModal.classList.remove("show");
+  selectedParticipantId = null;
+
+  refreshApp();
+  showToast("Verification updated!");
 }
 
 function deleteEvent(index) {
@@ -295,6 +390,13 @@ closeParticipantForm.addEventListener("click", () => {
   participantModal.classList.remove("show");
 });
 
+closeDetailModal.addEventListener("click", () => {
+  detailModal.classList.remove("show");
+  selectedParticipantId = null;
+});
+
+saveVerificationBtn.addEventListener("click", saveVerification);
+
 eventForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
@@ -332,7 +434,8 @@ participantForm.addEventListener("submit", function (e) {
     company: document.getElementById("participantCompany").value,
     whatsapp: document.getElementById("participantWhatsapp").value,
     email: document.getElementById("participantEmail").value,
-    status: document.getElementById("participantStatus").value
+    status: document.getElementById("participantStatus").value,
+    adminNotes: ""
   };
 
   participants.push(newParticipant);
@@ -351,6 +454,11 @@ window.addEventListener("click", function (e) {
 
   if (e.target === participantModal) {
     participantModal.classList.remove("show");
+  }
+
+  if (e.target === detailModal) {
+    detailModal.classList.remove("show");
+    selectedParticipantId = null;
   }
 });
 
