@@ -1,4 +1,4 @@
-const events = [
+const defaultEvents = [
   {
     name: "Daikin National Gathering",
     date: "2026-06-12",
@@ -36,6 +36,17 @@ const participants = [
   }
 ];
 
+let events = JSON.parse(localStorage.getItem("wph_events")) || defaultEvents;
+
+const eventModal = document.getElementById("eventModal");
+const openEventForm = document.getElementById("openEventForm");
+const closeEventForm = document.getElementById("closeEventForm");
+const eventForm = document.getElementById("eventForm");
+
+function saveEvents() {
+  localStorage.setItem("wph_events", JSON.stringify(events));
+}
+
 function renderDashboard() {
   document.getElementById("totalEvents").textContent = events.length;
   document.getElementById("totalParticipants").textContent = participants.length;
@@ -51,7 +62,7 @@ function renderEvents() {
   const table = document.getElementById("eventTable");
   table.innerHTML = "";
 
-  events.forEach(event => {
+  events.forEach((event, index) => {
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -62,6 +73,9 @@ function renderEvents() {
         <span class="badge ${event.status === "Active" ? "active" : "draft"}">
           ${event.status}
         </span>
+      </td>
+      <td>
+        <button class="small-btn danger" onclick="deleteEvent(${index})">Delete</button>
       </td>
     `;
 
@@ -90,6 +104,44 @@ function renderParticipants() {
     list.appendChild(item);
   });
 }
+
+function deleteEvent(index) {
+  const confirmDelete = confirm("Are you sure you want to delete this event?");
+  if (!confirmDelete) return;
+
+  events.splice(index, 1);
+  saveEvents();
+  renderDashboard();
+  renderEvents();
+}
+
+openEventForm.addEventListener("click", () => {
+  eventModal.classList.add("show");
+});
+
+closeEventForm.addEventListener("click", () => {
+  eventModal.classList.remove("show");
+});
+
+eventForm.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const newEvent = {
+    name: document.getElementById("eventName").value,
+    date: document.getElementById("eventDate").value,
+    venue: document.getElementById("eventVenue").value,
+    status: document.getElementById("eventStatus").value
+  };
+
+  events.push(newEvent);
+  saveEvents();
+
+  eventForm.reset();
+  eventModal.classList.remove("show");
+
+  renderDashboard();
+  renderEvents();
+});
 
 renderDashboard();
 renderEvents();
