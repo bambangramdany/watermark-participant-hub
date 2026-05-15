@@ -1,1 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watermark Participant Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>Watermark<br><span>Participant Hub</span></h2>
+    <nav>
+      <a class="active">Dashboard</a>
+      <a>Events</a>
+      <a>Participants</a>
+      <a>Invitation</a>
+      <a>Check-in</a>
+      <a>Reports</a>
+    </nav>
+  </aside>
 
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <p>Event registration & participant management system</p>
+      </div>
+      <button>+ New Event</button>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <p>Total Events</p>
+        <h2 id="totalEvents">0</h2>
+      </div>
+      <div class="card">
+        <p>Total Participants</p>
+        <h2 id="totalParticipants">0</h2>
+      </div>
+      <div class="card">
+        <p>Confirmed</p>
+        <h2 id="confirmedParticipants">0</h2>
+      </div>
+      <div class="card">
+        <p>Pending</p>
+        <h2 id="pendingParticipants">0</h2>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <div class="panel">
+        <h3>Event List</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Date</th>
+              <th>Venue</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="eventTable"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>Participant Status</h3>
+        <div id="participantList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
