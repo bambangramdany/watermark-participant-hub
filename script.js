@@ -1,3 +1,6 @@
+# Replace FULL script.js
+
+```javascript
 const loggedUser = JSON.parse(localStorage.getItem("wph_logged_user"));
 
 if (!loggedUser) {
@@ -61,7 +64,6 @@ async function fetchEvents() {
 
   if (error) {
     console.error(error);
-    alert("Failed to load events.");
     return;
   }
 
@@ -76,7 +78,6 @@ async function fetchParticipants() {
 
   if (error) {
     console.error(error);
-    alert("Failed to load participants.");
     return;
   }
 
@@ -91,7 +92,6 @@ async function fetchCheckins() {
 
   if (error) {
     console.error(error);
-    alert("Failed to load check-ins.");
     return;
   }
 
@@ -149,7 +149,7 @@ async function deleteEvent(id) {
 
   if (error) {
     console.error(error);
-    alert("Failed to delete event. Make sure this event has no participants.");
+    alert("Failed to delete event.");
     return;
   }
 
@@ -434,9 +434,18 @@ function setupRealtimeSubscriptions() {
     .subscribe();
 }
 
+function setupPollingFallback() {
+  setInterval(async () => {
+    await refreshRealtimeData();
+  }, 5000);
+}
+
 async function initApp() {
   await refreshRealtimeData();
+
   setupRealtimeSubscriptions();
+  setupPollingFallback();
 }
 
 initApp();
+```
