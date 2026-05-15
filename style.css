@@ -547,3 +547,58 @@ textarea {
   font-size: 22px;
   font-weight: bold;
 }
+
+.invitation-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  border-radius: 28px;
+  padding: 36px;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.invitation-card h1 {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.invitation-card h2 {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.invitation-card p {
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.invitation-badge {
+  display: inline-block;
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 999px;
+  margin-top: 16px;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.qr-placeholder {
+  width: 180px;
+  height: 180px;
+  background: white;
+  margin: 28px auto;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.event-pass-footer {
+  margin-top: 26px;
+  font-size: 14px;
+  color: #94a3b8;
+}
